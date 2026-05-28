@@ -566,9 +566,18 @@ hr.section-rule::before{content:"§ § §"}
     <a href="#ch6-sol" class="section">Solutions</a>
   </nav>
 
-  <h4>Part II <em>(soon)</em></h4>
+  <h4>Part II (cont.)</h4>
   <nav>
-    <a href="#">7. None &amp; the Sentinel</a>
+    <a href="#ch7"><strong>7. None &amp; the Sentinel</strong></a>
+    <a href="#ch7-1" class="section">7.1 The Idea of Absence</a>
+    <a href="#ch7-2" class="section">7.2 NoneType: One Type, One Value</a>
+    <a href="#ch7-3" class="section">7.3 The is None Idiom</a>
+    <a href="#ch7-4" class="section">7.4 None as Default Sentinel</a>
+    <a href="#ch7-5" class="section">7.5 Custom Sentinels</a>
+    <a href="#ch7-6" class="section">7.6 None in Type Hints</a>
+    <a href="#ch7-7" class="section">7.7 Almost-None: nan, inf, empty</a>
+    <a href="#ch7-ex" class="section">Exercises</a>
+    <a href="#ch7-sol" class="section">Solutions</a>
   </nav>
 </aside>
 
@@ -4080,7 +4089,424 @@ Cart has items</code></pre>
 </section>
 
 <!-- ===================================================================== -->
-<!-- ================== END OF CHAPTER 6: MORE TO COME =================== -->
+<!-- ================== CHAPTER 7: NONE & THE SENTINEL =================== -->
+<!-- ===================================================================== -->
+<section class="chapter" id="ch7">
+
+<div class="page-header">
+  <span class="title-left">Python · A Complete Course</span>
+  <span class="title-right">Chapter 7 · None &amp; the Sentinel</span>
+</div>
+
+<div class="chapter-inner">
+
+<div class="chapter-header">
+  <div class="chapter-eyebrow">Chapter 7 · Part II · The Primitives</div>
+  <h1>None &amp; the Sentinel</h1>
+  <p class="deck">A whole chapter for one value, because that one value carries surprising weight: it stands for absence, it powers the most common default-argument idiom, it is the source of more silent bugs than any other single feature, and its history reaches back to a billion-dollar regret.</p>
+</div>
+
+<div class="epigraph">
+  I call it my billion-dollar mistake. It was the invention of the null reference in 1965. At that time, I was designing the first comprehensive type system for references in an object-oriented language. My goal was to ensure that all use of references should be absolutely safe, with checking performed automatically by the compiler. But I could not resist the temptation to put in a null reference, simply because it was so easy to implement.
+  <cite>— Tony Hoare, QCon London 2009</cite>
+</div>
+
+<p class="opening">Every language that lets you say "there is no value here" has to decide how. Some pick a special pointer that the programmer must everywhere remember to check, and pay the cost in null-pointer crashes for decades after. Some refuse the idea entirely and force you to wrap every absent thing in an explicit container. Python takes a middle path: it has a single, well-known object called <code>None</code> that stands for the absence of a value, hands it to you wherever a function has nothing useful to return, and gives you a small set of idioms for handling it well. Used correctly, it is one of the most pleasant null-equivalents in any language. Used carelessly, it produces exactly the bug class Hoare named for, with a softer landing.</p>
+
+<p>This is a short chapter on a small subject, but the subject is load-bearing. Almost every function you write will need to think about <code>None</code> at least once: as a default argument, as a result for "nothing found", as a sentinel that distinguishes "no value given" from "the value given was None". We will cover all three, plus the type-hint conventions that pin <code>None</code> down statically, and a quick look at the family of "almost-None" values (<code>nan</code>, <code>inf</code>, empty strings, empty lists) that beginners sometimes conflate.</p>
+
+<!-- ===================== 7.1 ===================== -->
+<h2 id="ch7-1"><span class="num">7.1</span>The Idea of Absence</h2>
+
+<figure class="photo" style="float:right;width:210px;margin:0 0 16px 24px;">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Sir_Tony_Hoare_IMG_5125.jpg/960px-Sir_Tony_Hoare_IMG_5125.jpg" alt="Sir Tony Hoare" loading="lazy">
+  <figcaption><strong>Figure 7.1.</strong> Sir Tony Hoare (born 1934), who in 1965 added the null reference to ALGOL W and forty-four years later called it the billion-dollar mistake. <a href="https://en.wikipedia.org/wiki/Tony_Hoare" target="_blank" rel="noopener">Tony Hoare</a></figcaption>
+</figure>
+
+<p>The number zero is not the absence of a number; it is a number with the value zero. The empty string is not the absence of text; it is a string with no characters. To express the genuine absence of a value, distinct from any specific value, you need a separate thing, and Python's separate thing is called <code>None</code>. It is what a function returns when it has nothing meaningful to return. It is what a database query gives back when there was no matching row. It is what a default-valued parameter holds when the caller did not supply one.</p>
+
+<p>Why such an idea needs to exist at all is clearer after a moment with a counter-example. Suppose a function looks up a user by id and you decide that the "not found" answer should be the number zero. That works until someone valid is assigned id zero. Then you cannot tell whether the user is missing or simply has id zero, and the system has to be patched. The whole point of <code>None</code> is to be reliably outside every other value's domain: no real number is <code>None</code>, no real string is <code>None</code>, no real user is <code>None</code>. The price of this clarity is small but real: you must remember to check for <code>None</code> before treating a result as if it were the type you expected.</p>
+
+<div class="definition">
+  <div class="term">None</div>
+  <p>The unique instance of the type <code>NoneType</code>, used to represent the absence of a value. There is only one <code>None</code> object in any running Python program; every <code>None</code> you write refers to the same one. It is falsy, hashable, and immutable, which makes it a fine default value and a fine dictionary key. It has no methods of interest beyond what every object has.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: The Idea of Null</div>
+  <ul>
+    <li><a href="https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/" target="_blank" rel="noopener">Tony Hoare's "Null References: The Billion Dollar Mistake"</a><span class="source">the full 2009 talk</span></li>
+    <li><a href="https://en.wikipedia.org/wiki/Nullable_type" target="_blank" rel="noopener">Nullable type</a><span class="source">how other languages address the same problem</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 7.2 ===================== -->
+<h2 id="ch7-2"><span class="num">7.2</span>NoneType: One Type, One Value</h2>
+
+<p><code>None</code> is unusual among Python's built-in values for being a true singleton: its type, <code>NoneType</code>, has exactly one instance, and the interpreter guarantees you will never see another. Attempting to create one fails by design, and the type cannot be subclassed.</p>
+
+<pre data-lang="python"><code><span class="tok-fn">type</span>(<span class="tok-kw">None</span>)            <span class="tok-com"># &lt;class 'NoneType'&gt;</span>
+NoneType = <span class="tok-fn">type</span>(<span class="tok-kw">None</span>)
+NoneType()              <span class="tok-com"># returns None, the same None as before</span>
+NoneType() <span class="tok-kw">is</span> <span class="tok-kw">None</span>     <span class="tok-com"># True, there is no second instance</span>
+
+<span class="tok-fn">id</span>(<span class="tok-kw">None</span>) == <span class="tok-fn">id</span>(<span class="tok-kw">None</span>)   <span class="tok-com"># True, every reference points at the one object</span></code></pre>
+
+<p>This uniqueness is what makes the <code>is None</code> check (Section 7.3) both fast and reliable. There is also a quirk worth knowing about how <code>None</code> behaves with the rest of the language. It is <em>falsy</em>, so <code>bool(None)</code> is <code>False</code> and <code>None</code> in an <code>if</code> condition takes the false branch. But it cannot be ordered against anything: comparing <code>None</code> with <code>&lt;</code> or <code>&gt;</code> to a number raises <code>TypeError</code>, a change Python 3 made deliberately, because comparing apples to absence had no sensible answer in Python 2 either, and the silent "is less than everything" rule it used was a frequent source of bugs.</p>
+
+<pre data-lang="python"><code><span class="tok-fn">bool</span>(<span class="tok-kw">None</span>)        <span class="tok-com"># False, None is falsy</span>
+<span class="tok-kw">None</span> == <span class="tok-num">0</span>          <span class="tok-com"># False, None equals nothing but itself</span>
+<span class="tok-kw">None</span> == <span class="tok-kw">None</span>       <span class="tok-com"># True</span>
+<span class="tok-kw">None</span> &lt; <span class="tok-num">5</span>           <span class="tok-com"># TypeError: '&lt;' not supported between 'NoneType' and 'int'</span></code></pre>
+
+<div class="note">
+  <span class="label">A REPL quirk</span>
+  <p>When you type an expression into the REPL, the interpreter prints the value's <code>repr</code>. The one exception is when the value is <code>None</code>: the REPL hides it, to keep the screen quiet for the many functions that return <code>None</code> on purpose. So <code>print("hi")</code> shows you only the printed output, not also a separate <code>None</code> line; the <code>None</code> that <code>print</code> actually returned is silently swallowed. This is helpful but occasionally confusing: <em>some</em> calls that look like they returned nothing did return <code>None</code>.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: NoneType</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/library/constants.html#None" target="_blank" rel="noopener">None, Python docs</a><span class="source">the official reference</span></li>
+    <li><a href="https://docs.python.org/3/whatsnew/3.0.html#ordering-comparisons" target="_blank" rel="noopener">Ordering comparisons in Python 3</a><span class="source">why None &lt; 5 now raises</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 7.3 ===================== -->
+<h2 id="ch7-3"><span class="num">7.3</span>The <code>is None</code> Idiom</h2>
+
+<p>To check whether a value is <code>None</code>, write <code>x is None</code>, never <code>x == None</code>. The recommendation appears in PEP 8 and is one of the few style rules with a real technical reason behind it.</p>
+
+<p>Three reasons matter. First, <strong>speed</strong>: <code>is</code> compares object identities, which in CPython is a single pointer comparison; <code>==</code> calls <code>__eq__</code>, which is a method dispatch. The difference is microscopic per call but real. Second, <strong>correctness</strong>: a perverse class could define <code>__eq__</code> to return <code>True</code> when compared with <code>None</code>, so <code>x == None</code> might lie. Nothing can fake identity with the one true <code>None</code>; <code>is None</code> always gives the right answer. Third, <strong>style</strong>: the rest of the Python ecosystem uses <code>is None</code>, and consistency is its own value.</p>
+
+<div class="example">
+  <div class="example-head">Example 7.1<span class="title">Two writes of the same check</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-com"># Idiomatic</span>
+<span class="tok-kw">if</span> result <span class="tok-kw">is</span> <span class="tok-kw">None</span>:
+    handle_missing()
+
+<span class="tok-com"># Works, but slower and stylistically wrong</span>
+<span class="tok-kw">if</span> result == <span class="tok-kw">None</span>:
+    handle_missing()
+
+<span class="tok-com"># Negated form: always 'is not None', not 'not ... is None'</span>
+<span class="tok-kw">if</span> result <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>:
+    use(result)</code></pre>
+    <p>The phrasing <code>x is not None</code> reads as English and is the canonical positive form. Avoid <code>not x is None</code>, which is parsed correctly (<code>not (x is None)</code>) but reads ambiguously to a human.</p>
+  </div>
+</div>
+
+<div class="warning">
+  <span class="label">A frequent mistake</span>
+  <p>Beginners sometimes write <code>if x:</code> intending to check whether <code>x</code> is <code>None</code>. This works some of the time, because <code>None</code> is falsy, but it also treats <code>0</code>, <code>""</code>, <code>[]</code>, and every other falsy value as if they were missing. A function whose valid result might legitimately be <code>0</code> must distinguish "got nothing" from "got zero" by writing <code>if x is None:</code> explicitly.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: The is None Rule</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0008/#programming-recommendations" target="_blank" rel="noopener">PEP 8: Programming Recommendations</a><span class="source">the official styling rule</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 7.4 ===================== -->
+<h2 id="ch7-4"><span class="num">7.4</span>None as the Default Sentinel</h2>
+
+<p>The single most useful place for <code>None</code> in everyday Python is the default-argument idiom. We met the underlying trap in Chapter 3 and again briefly when introducing functions: a mutable default value (<code>def f(items=[])</code>) is created once and shared across every call, with the surprising consequence that the "default" accumulates state across calls. The remedy is to use <code>None</code> as the default and build the real default inside the function.</p>
+
+<div class="example">
+  <div class="example-head">Example 7.2<span class="title">The mutable-default fix, in three steps</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-com"># Wrong: the empty list is created ONCE, when the function is defined.</span>
+<span class="tok-kw">def</span> <span class="tok-fn">append_item</span>(item, items=[]):
+    items.append(item)
+    <span class="tok-kw">return</span> items
+
+append_item(<span class="tok-num">1</span>)        <span class="tok-com"># [1]</span>
+append_item(<span class="tok-num">2</span>)        <span class="tok-com"># [1, 2], the default REMEMBERED the previous call!</span>
+
+<span class="tok-com"># Right: None signals "no list given", then build a fresh one each call.</span>
+<span class="tok-kw">def</span> <span class="tok-fn">append_item</span>(item, items=<span class="tok-kw">None</span>):
+    <span class="tok-kw">if</span> items <span class="tok-kw">is</span> <span class="tok-kw">None</span>:
+        items = []
+    items.append(item)
+    <span class="tok-kw">return</span> items
+
+append_item(<span class="tok-num">1</span>)        <span class="tok-com"># [1]</span>
+append_item(<span class="tok-num">2</span>)        <span class="tok-com"># [2], fresh empty list each time</span></code></pre>
+    <p>This pattern is so common that you should consider it a reflex: whenever a default value would naturally be a mutable object (a list, a dict, a set, an instance of your own class), the default goes into the signature as <code>None</code> and the real value is constructed in the body.</p>
+  </div>
+</div>
+
+<p><code>None</code> is the right sentinel here for several reasons. It is unique, so the test <code>if x is None</code> cannot be confused with a real value. It is immutable, so it cannot accumulate state. It is well-known, so a reader of the function knows immediately what is going on. And it has no methods worth calling by accident.</p>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Default Arguments</div>
+  <ul>
+    <li><a href="https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments" target="_blank" rel="noopener">The mutable-default-argument trap</a><span class="source">Python Guide gotchas</span></li>
+    <li><a href="https://florimond.dev/en/posts/2018/08/python-mutable-defaults-are-the-source-of-all-evil/" target="_blank" rel="noopener">"Python Mutable Defaults Are the Source of All Evil"</a><span class="source">a memorable explanation</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 7.5 ===================== -->
+<h2 id="ch7-5"><span class="num">7.5</span>When <code>None</code> Is a Valid Value: Custom Sentinels</h2>
+
+<p>The default-argument idiom of Section 7.4 works perfectly until the function is one that <em>legitimately</em> accepts <code>None</code> as a value. Imagine a configuration getter that should distinguish three cases: "the caller gave us no default" (return whatever is stored, even <code>None</code>), "the caller passed a default of <code>None</code>" (return <code>None</code> when missing), and "the caller passed a real default" (return that). The first and second cases look identical to <code>if x is None</code>, because in the first case the parameter is also <code>None</code>. We need a sentinel that is not <code>None</code>.</p>
+
+<p>The standard pattern is to create a unique private object that no caller could ever pass by accident.</p>
+
+<div class="example">
+  <div class="example-head">Example 7.3<span class="title">A custom sentinel for "argument not provided"</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>_MISSING = <span class="tok-fn">object</span>()   <span class="tok-com"># a plain object, unique by identity</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">get_config</span>(key, default=_MISSING):
+    <span class="tok-kw">if</span> key <span class="tok-kw">in</span> config_store:
+        <span class="tok-kw">return</span> config_store[key]
+    <span class="tok-kw">if</span> default <span class="tok-kw">is</span> _MISSING:
+        <span class="tok-kw">raise</span> <span class="tok-cls">KeyError</span>(key)         <span class="tok-com"># caller gave no default → fail loudly</span>
+    <span class="tok-kw">return</span> default                <span class="tok-com"># caller's default, which may be None</span>
+
+get_config(<span class="tok-str">"theme"</span>)              <span class="tok-com"># KeyError if missing</span>
+get_config(<span class="tok-str">"theme"</span>, default=<span class="tok-kw">None</span>)  <span class="tok-com"># None if missing, but distinct from "not given"</span></code></pre>
+    <p>An empty <code>object()</code> instance is the simplest sentinel you can make. Each call to <code>object()</code> produces a fresh instance with its own identity, and no caller, anywhere, can ever pass it by accident, because they have no name for it. The <code>is _MISSING</code> check then cleanly separates the two cases.</p>
+  </div>
+</div>
+
+<p>This pattern appears throughout the standard library. The <code>dict.pop</code> method takes an optional default with exactly this design: when no default is supplied, popping a missing key raises <code>KeyError</code>; when a default is supplied (which may be <code>None</code>), the method returns it. The <code>dataclasses</code> module exports a <code>MISSING</code> sentinel for the same purpose. And <code>argparse</code> uses a <code>SUPPRESS</code> sentinel to mean "do not even set this attribute".</p>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Sentinels</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0661/" target="_blank" rel="noopener">PEP 661: Sentinel Values</a><span class="source">a proposal to standardise the pattern</span></li>
+    <li><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.MISSING" target="_blank" rel="noopener">dataclasses.MISSING</a><span class="source">a real-world sentinel in the standard library</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 7.6 ===================== -->
+<h2 id="ch7-6"><span class="num">7.6</span><code>None</code> in Type Hints: <code>Optional</code> and <code>T | None</code></h2>
+
+<p>When you annotate a function's signature, declaring that a parameter or return value <em>can</em> be <code>None</code> is part of the type. The <code>typing</code> module gives you two equivalent ways to say it.</p>
+
+<pre data-lang="python"><code><span class="tok-kw">from</span> typing <span class="tok-kw">import</span> Optional
+
+<span class="tok-com"># Older style (Python 3.5+):</span>
+<span class="tok-kw">def</span> <span class="tok-fn">find_user</span>(name: <span class="tok-fn">str</span>) -&gt; Optional[<span class="tok-cls">User</span>]:
+    ...
+
+<span class="tok-com"># Modern style (Python 3.10+, PEP 604):</span>
+<span class="tok-kw">def</span> <span class="tok-fn">find_user</span>(name: <span class="tok-fn">str</span>) -&gt; <span class="tok-cls">User</span> | <span class="tok-kw">None</span>:
+    ...</code></pre>
+
+<p><code>Optional[T]</code> means exactly <code>Union[T, None]</code>, which since Python 3.10 can be written as <code>T | None</code>. The two are interchangeable; <code>T | None</code> is the modern preference because it does not need an import. Use the annotation wherever a function might legitimately return <code>None</code> (a lookup that may not find anything), or wherever an argument's default is <code>None</code>. A type checker like <code>mypy</code> or <code>pyright</code> will then refuse to let you call a method on the result without first checking, which is exactly the discipline that converts Hoare's billion-dollar mistake into a compiler-level annoyance.</p>
+
+<pre data-lang="python"><code><span class="tok-kw">def</span> <span class="tok-fn">find_user</span>(name: <span class="tok-fn">str</span>) -&gt; <span class="tok-cls">User</span> | <span class="tok-kw">None</span>:
+    ...
+
+u = find_user(<span class="tok-str">"Ada"</span>)
+u.greet()                <span class="tok-com"># mypy error: u may be None</span>
+<span class="tok-kw">if</span> u <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>:
+    u.greet()            <span class="tok-com"># OK: inside this branch mypy narrows the type to User</span></code></pre>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Optional in Typing</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0604/" target="_blank" rel="noopener">PEP 604: Allow writing union types as X | Y</a><span class="source">the modern syntax</span></li>
+    <li><a href="https://mypy.readthedocs.io/en/stable/kinds_of_types.html#optional-types-and-the-none-type" target="_blank" rel="noopener">mypy: Optional types and the None type</a><span class="source">how the checker narrows types after is-None tests</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 7.7 ===================== -->
+<h2 id="ch7-7"><span class="num">7.7</span>Almost-<code>None</code>: <code>nan</code>, <code>inf</code>, the Empty Container</h2>
+
+<p>Several other values look superficially like absence and are sometimes used as if they meant the same thing. They do not, and conflating them is the source of small bugs that can be very hard to track down. A short reference table:</p>
+
+<table>
+  <tr><th>Value</th><th>What it really means</th><th>Use for</th></tr>
+  <tr><td><code>None</code></td><td>no value</td><td>a missing return, an unset argument, the absent</td></tr>
+  <tr><td><code>float("nan")</code></td><td>not-a-number, the result of <code>0/0</code> or <code>inf - inf</code></td><td>signalling a calculation that has no real-number answer</td></tr>
+  <tr><td><code>float("inf")</code></td><td>infinity, larger than every other float</td><td>upper bounds in search problems</td></tr>
+  <tr><td><code>0</code></td><td>the number zero</td><td>a real count or measurement that happens to be zero</td></tr>
+  <tr><td><code>""</code></td><td>a string with no characters</td><td>a real piece of text that happens to be empty</td></tr>
+  <tr><td><code>[]</code></td><td>a list with no items</td><td>a real collection that happens to be empty</td></tr>
+</table>
+
+<p>Two pairs deserve a closer look. <code>None</code> and <code>nan</code> are both used for "I do not have a usable answer", but their semantics differ: <code>None</code> is the universal absence, while <code>nan</code> is specifically the floating-point sentinel for an undefined numeric result, and it propagates through arithmetic (any operation involving <code>nan</code> returns <code>nan</code>). <code>None</code> and <code>[]</code> are both falsy, but they mean different things in an API: a function that returns <code>[]</code> is telling you "here is the empty result"; one that returns <code>None</code> is telling you "I have no result at all". Code that treats the two as interchangeable will eventually meet a caller who needed the distinction.</p>
+
+<div class="example">
+  <div class="example-head">Example 7.4<span class="title">nan is unequal to itself</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-kw">import</span> math
+math.nan == math.nan       <span class="tok-com"># False, yes, really</span>
+math.nan <span class="tok-kw">is</span> math.nan       <span class="tok-com"># True, but only because there is one nan object here</span>
+math.isnan(math.nan)       <span class="tok-com"># True, the correct way to test for nan</span>
+
+<span class="tok-kw">None</span> == <span class="tok-kw">None</span>              <span class="tok-com"># True, None behaves the way you expect</span></code></pre>
+    <p><code>nan</code>'s refusal to equal itself is mandated by IEEE 754 and is not Python's fault; every modern language inherits the rule. The practical consequence is that you cannot deduplicate or sort a list containing <code>nan</code> reliably, and a list that might hold both real numbers and absences is usually better expressed with <code>None</code> than with <code>nan</code>.</p>
+  </div>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Almost-None</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/library/math.html#math.nan" target="_blank" rel="noopener">math.nan, math.inf, math.isnan</a><span class="source">how Python exposes the IEEE-754 specials</span></li>
+    <li><a href="https://pandas.pydata.org/docs/user_guide/missing_data.html" target="_blank" rel="noopener">pandas: working with missing data</a><span class="source">a real-world library that distinguishes None, NaN, and NaT</span></li>
+  </ul>
+</div>
+
+<hr class="section-rule"/>
+
+<!-- ===================== EXERCISES ===================== -->
+<h2 id="ch7-ex">Exercises</h2>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.1<span class="title">The unique None</span></div>
+  <p>Show, by experiment in a REPL, that there is only ever one <code>None</code> object in a running program. Use <code>id()</code>, <code>is</code>, and <code>type(None)()</code> in your answer.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.2<span class="title">is None versus == None</span></div>
+  <p>Write a class whose <code>__eq__</code> method always returns <code>True</code>, and demonstrate that <code>your_object == None</code> reports <code>True</code> while <code>your_object is None</code> correctly reports <code>False</code>. Explain in one sentence why this is the reason PEP 8 recommends <code>is None</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.3<span class="title">The mutable-default trap</span></div>
+  <p>The function below has a famous bug. Run it three times, predict and verify the output, then fix it using the <code>None</code> idiom from Section 7.4.</p>
+<pre data-lang="python"><code><span class="tok-kw">def</span> <span class="tok-fn">add_tag</span>(tag, tags=[]):
+    tags.append(tag)
+    <span class="tok-kw">return</span> tags</code></pre>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.4<span class="title">Distinguishing "not given" from None</span></div>
+  <p>Write a function <code>get(d, key, default=...)</code> that returns <code>d[key]</code> if the key is present, returns the user's <code>default</code> if one was given (even when it is <code>None</code>), and raises <code>KeyError</code> if neither applies. You must distinguish "default not given" from "default given as <code>None</code>". Use the sentinel pattern.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.5<span class="title">Type-narrowed access</span></div>
+  <p>Given a function annotated <code>def first(items: list[int]) -&gt; int | None</code>, write a caller that prints the first item if there is one. Explain, with reference to a type checker, why writing <code>print(first(xs).bit_length())</code> directly would be a static error.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.6<span class="title">None versus nan</span></div>
+  <p>Build a small list <code>[1.0, None, 2.0, float("nan"), 3.0]</code>. (a) Filter out the missing values to keep only real numbers. Take care that the obvious <code>x is not None</code> check leaves <code>nan</code> in. (b) Write the proper filter that removes both <code>None</code> and <code>nan</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.7<span class="title">The silent return</span></div>
+  <p>What does <code>print(print("hello"))</code> output, and why? Trace the two values involved (the printed text and the returned value), and connect the result to the REPL quirk discussed in Section 7.2.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 7.8<span class="title">A small library question</span></div>
+  <p>Look up the documentation of <code>dict.get(key, default)</code>. What does it return when the key is missing and no default is given? What if the key is present and its value <em>is</em> <code>None</code>? Explain why this means you cannot use <code>dict.get</code> alone to distinguish "key missing" from "key present, value is None".</p>
+</div>
+
+<!-- ===================== SOLUTIONS ===================== -->
+<div class="solutions" id="ch7-sol">
+  <h2>Solutions to Chapter 7 Exercises</h2>
+
+  <div class="solution">
+    <h3>Solution 7.1: The unique None</h3>
+<pre data-lang="python"><code><span class="tok-fn">id</span>(<span class="tok-kw">None</span>) == <span class="tok-fn">id</span>(<span class="tok-kw">None</span>)        <span class="tok-com"># True</span>
+a, b = <span class="tok-kw">None</span>, <span class="tok-kw">None</span>
+a <span class="tok-kw">is</span> b                       <span class="tok-com"># True, same object</span>
+NoneType = <span class="tok-fn">type</span>(<span class="tok-kw">None</span>)
+NoneType() <span class="tok-kw">is</span> <span class="tok-kw">None</span>            <span class="tok-com"># True, even constructing one returns the same singleton</span></code></pre>
+    <p>The interpreter guarantees a single instance. Two assignments and a call to <code>NoneType()</code> all return references to the same object, and that fact is the basis for the <code>is None</code> idiom.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 7.2: is None versus == None</h3>
+<pre data-lang="python"><code><span class="tok-kw">class</span> <span class="tok-cls">Lying</span>:
+    <span class="tok-kw">def</span> <span class="tok-fn">__eq__</span>(self, other):
+        <span class="tok-kw">return</span> <span class="tok-kw">True</span>
+
+x = Lying()
+<span class="tok-fn">print</span>(x == <span class="tok-kw">None</span>)    <span class="tok-com"># True, the __eq__ method lied</span>
+<span class="tok-fn">print</span>(x <span class="tok-kw">is</span> <span class="tok-kw">None</span>)    <span class="tok-com"># False, identity cannot be faked</span></code></pre>
+    <p>A class can override <code>==</code> to return anything, so <code>x == None</code> is only as reliable as the implementation behind it. <code>is None</code> compares object identities, which no Python code can lie about, which is why it is the only correct check.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 7.3: The mutable-default trap</h3>
+<pre data-lang="python"><code><span class="tok-com"># Bug demonstration:</span>
+add_tag(<span class="tok-str">"a"</span>)     <span class="tok-com"># ['a']</span>
+add_tag(<span class="tok-str">"b"</span>)     <span class="tok-com"># ['a', 'b'], the "default" remembered the previous call</span>
+add_tag(<span class="tok-str">"c"</span>)     <span class="tok-com"># ['a', 'b', 'c']</span>
+
+<span class="tok-com"># Fix:</span>
+<span class="tok-kw">def</span> <span class="tok-fn">add_tag</span>(tag, tags=<span class="tok-kw">None</span>):
+    <span class="tok-kw">if</span> tags <span class="tok-kw">is</span> <span class="tok-kw">None</span>:
+        tags = []
+    tags.append(tag)
+    <span class="tok-kw">return</span> tags</code></pre>
+    <p>The mutable list in the original signature is created exactly once, when <code>def</code> runs, and shared across every call. Substituting <code>None</code> as the signal-only default forces each call to build a fresh list.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 7.4: Distinguishing "not given" from None</h3>
+<pre data-lang="python"><code>_MISSING = <span class="tok-fn">object</span>()
+
+<span class="tok-kw">def</span> <span class="tok-fn">get</span>(d, key, default=_MISSING):
+    <span class="tok-kw">if</span> key <span class="tok-kw">in</span> d:
+        <span class="tok-kw">return</span> d[key]
+    <span class="tok-kw">if</span> default <span class="tok-kw">is</span> _MISSING:
+        <span class="tok-kw">raise</span> <span class="tok-cls">KeyError</span>(key)
+    <span class="tok-kw">return</span> default
+
+get({<span class="tok-str">"a"</span>: <span class="tok-num">1</span>}, <span class="tok-str">"a"</span>)              <span class="tok-com"># 1</span>
+get({<span class="tok-str">"a"</span>: <span class="tok-num">1</span>}, <span class="tok-str">"b"</span>)              <span class="tok-com"># KeyError</span>
+get({<span class="tok-str">"a"</span>: <span class="tok-num">1</span>}, <span class="tok-str">"b"</span>, default=<span class="tok-kw">None</span>) <span class="tok-com"># None, but distinct from "not given"</span></code></pre>
+    <p><code>_MISSING</code> is a fresh, private object whose identity no caller can ever match by accident. The <code>is _MISSING</code> test separates "no default passed" from "default passed and it happens to be None", which the plain <code>default is None</code> test cannot do.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 7.5: Type-narrowed access</h3>
+<pre data-lang="python"><code>x = first(xs)
+<span class="tok-kw">if</span> x <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>:
+    <span class="tok-fn">print</span>(x)</code></pre>
+    <p>The annotated return type is <code>int | None</code>, so the static type of <code>first(xs)</code> at the call site is the union. Calling <code>.bit_length()</code> directly would fail under a type checker because <code>None</code> has no <code>bit_length</code> method. After <code>if x is not None:</code>, the checker narrows the type inside the branch to <code>int</code> alone, so calls become legal. This is precisely the discipline Hoare wished he had imposed in 1965.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 7.6: None versus nan</h3>
+<pre data-lang="python"><code><span class="tok-kw">import</span> math
+xs = [<span class="tok-num">1.0</span>, <span class="tok-kw">None</span>, <span class="tok-num">2.0</span>, <span class="tok-fn">float</span>(<span class="tok-str">"nan"</span>), <span class="tok-num">3.0</span>]
+
+<span class="tok-com"># (a) Naive filter, leaves nan in:</span>
+[x <span class="tok-kw">for</span> x <span class="tok-kw">in</span> xs <span class="tok-kw">if</span> x <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>]
+<span class="tok-com"># [1.0, 2.0, nan, 3.0], nan is not None, so it passed through</span>
+
+<span class="tok-com"># (b) Correct filter, drops both:</span>
+[x <span class="tok-kw">for</span> x <span class="tok-kw">in</span> xs <span class="tok-kw">if</span> x <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span> <span class="tok-kw">and</span> <span class="tok-kw">not</span> math.isnan(x)]
+<span class="tok-com"># [1.0, 2.0, 3.0]</span></code></pre>
+    <p><code>nan</code> is a perfectly real <code>float</code> object; only its value is special. The <code>is not None</code> check has nothing to grab onto with <code>nan</code>, so it lets it through, and the explicit <code>math.isnan</code> test is required. Note also the order: thanks to <code>and</code>'s short-circuit, the <code>isnan</code> call is only attempted on values that are not <code>None</code>, which is exactly what we want (calling <code>math.isnan(None)</code> would raise <code>TypeError</code>).</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 7.7: The silent return</h3>
+    <p><code>print("hello")</code> writes <code>hello</code> to standard output and returns <code>None</code>. The outer <code>print</code> then prints that <code>None</code> as a second line. The full output is two lines: <code>hello</code> and <code>None</code>. The REPL trick from Section 7.2 only suppresses <code>None</code> when it would be printed as the bare result of an expression; an explicit <code>print(None)</code> always shows up because that is what <code>print</code> was asked to do.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 7.8: A small library question</h3>
+    <p><code>dict.get(key)</code> returns <code>None</code> when the key is missing; <code>dict.get(key, default)</code> returns <code>default</code> instead. The trouble is that the method returns the same <code>None</code> in two genuinely different cases: when the key is missing and no default was supplied, and when the key is present with a value of <code>None</code>. There is no way to tell these apart from the return value alone. The standard solutions are to check <code>key in d</code> first, or to use the sentinel pattern of Section 7.5 (<code>d.get(key, _MISSING)</code> and then test <code>is _MISSING</code>), or, when <code>None</code> is never a valid stored value, to ignore the problem.</p>
+  </div>
+</div>
+
+</div><!-- /chapter-inner -->
+
+<div class="page-footer">
+  <span>First Edition · 2026</span>
+  <span class="pn">Pages 204–217</span>
+  <span>Chapter 7 of 22</span>
+</div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- ================== END OF CHAPTER 7: MORE TO COME =================== -->
 <!-- ===================================================================== -->
 
 </main>
