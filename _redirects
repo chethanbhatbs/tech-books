@@ -1,0 +1,12 @@
+# Short-URL aliases. Same syntax for Cloudflare Pages and Netlify.
+
+/book                /python-mastery.html      301
+/book.pdf            /Python-Mastery.pdf       301
+/textbook            /python-mastery.html      301
+/textbook.pdf        /Python-Mastery.pdf       301
+
+/handbook            /python-handbook.html     301
+/handbook.pdf        /Python-Handbook.pdf      301
+
+/mastery             /python-mastery.html      301
+/mastery.pdf         /Python-Mastery.pdf       301

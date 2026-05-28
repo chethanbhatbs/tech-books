@@ -5,3 +5,7 @@
 .idea/
 __pycache__/
 *.pyc
+.venv/
+
+# Cover / feature renders are committed (the spec requires them on main).
+!docs/images/*.png
