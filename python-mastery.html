@@ -579,6 +579,21 @@ hr.section-rule::before{content:"§ § §"}
     <a href="#ch7-ex" class="section">Exercises</a>
     <a href="#ch7-sol" class="section">Solutions</a>
   </nav>
+
+  <h4>Part III · The Containers</h4>
+  <nav>
+    <a href="#ch8"><strong>8. Lists in Depth</strong></a>
+    <a href="#ch8-1" class="section">8.1 The Workhorse</a>
+    <a href="#ch8-2" class="section">8.2 How a List Is Stored</a>
+    <a href="#ch8-3" class="section">8.3 Creating &amp; Indexing</a>
+    <a href="#ch8-4" class="section">8.4 Mutating Methods</a>
+    <a href="#ch8-5" class="section">8.5 Sorting</a>
+    <a href="#ch8-6" class="section">8.6 Copy &amp; the Aliasing Trap</a>
+    <a href="#ch8-7" class="section">8.7 Comprehensions in Depth</a>
+    <a href="#ch8-8" class="section">8.8 Performance Pitfalls</a>
+    <a href="#ch8-ex" class="section">Exercises</a>
+    <a href="#ch8-sol" class="section">Solutions</a>
+  </nav>
 </aside>
 
 <!-- ================= MAIN ================= -->
@@ -4506,7 +4521,648 @@ xs = [<span class="tok-num">1.0</span>, <span class="tok-kw">None</span>, <span 
 </section>
 
 <!-- ===================================================================== -->
-<!-- ================== END OF CHAPTER 7: MORE TO COME =================== -->
+<!-- ================== CHAPTER 8: LISTS IN DEPTH ======================== -->
+<!-- ===================================================================== -->
+<section class="chapter" id="ch8">
+
+<div class="page-header">
+  <span class="title-left">Python · A Complete Course</span>
+  <span class="title-right">Chapter 8 · Lists in Depth</span>
+</div>
+
+<div class="chapter-inner">
+
+<div class="chapter-header">
+  <div class="chapter-eyebrow">Chapter 8 · Part III · The Containers</div>
+  <h1>Lists in Depth</h1>
+  <p class="deck">The single most-used container in Python, examined from the inside out: what it really is in memory, what makes append fast and prepend slow, how to sort it properly, the famous aliasing bug that ate an afternoon, and the four kinds of comprehension you will write every day.</p>
+</div>
+
+<div class="epigraph">
+  There should be one obvious way to do it.
+  <cite>— Tim Peters, the Zen of Python (PEP 20)</cite>
+</div>
+
+<p class="opening">A great deal of what you will write in Python comes down to working with lists. The lines of a file, the rows of a table, the items in a shopping cart, the moves in a game, the results of a query: all of them are naturally lists. Where C++ asks you to choose between <code>vector</code>, <code>list</code>, <code>deque</code>, and <code>array</code>, and Java offers <code>ArrayList</code> alongside <code>LinkedList</code>, <code>Vector</code>, and a handful of others, Python gives you one ordered sequence type with a small, sharp set of operations on it, and an explicit alternative (<code>collections.deque</code>) for the one situation where the workhorse is the wrong tool. This chapter is about what that workhorse really is, what it does well, what it does badly, and what a careful programmer does about both.</p>
+
+<figure class="photo" style="float:right;width:210px;margin:8px 0 16px 24px;">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/4/4f/KnuthAtOpenContentAlliance.jpg" alt="Donald Knuth, 2005" loading="lazy">
+  <figcaption><strong>Figure 8.0.</strong> Donald Knuth, whose <em>Art of Computer Programming</em> is the lineage every chapter of this Part III walks in. <a href="https://en.wikipedia.org/wiki/Donald_Knuth" target="_blank" rel="noopener">Donald Knuth</a></figcaption>
+</figure>
+
+<p>Eight sections. The first establishes what a list is and why Python has only one of them. The second opens the hood and shows the array of pointers underneath, which explains everything about which operations are fast and which are not. Sections three and four cover the surface: building lists, indexing and slicing them, the dozen mutating methods. Section five takes sorting more seriously than most introductions do, because sorting badly is the single most common performance bug in everyday code. Section six revisits the aliasing trap from Chapter 3 in concrete list form, including its evil nested cousin. Section seven handles list comprehensions properly, including their three lesser-known forms. The last section is a catalogue of performance pitfalls and the four cases where a list is, in fact, the wrong tool.</p>
+
+<!-- ===================== 8.1 ===================== -->
+<h2 id="ch8-1"><span class="num">8.1</span>The Workhorse Container</h2>
+
+<p>A <strong>list</strong> in Python is an ordered, mutable sequence of values. It is written in square brackets, its elements may be of any type (even mixed), and its length may change at any moment by appending, inserting, or removing items. That sentence describes the surface; the rest of the chapter unpacks the consequences.</p>
+
+<pre data-lang="python"><code>fruits   = [<span class="tok-str">"apple"</span>, <span class="tok-str">"banana"</span>, <span class="tok-str">"cherry"</span>]      <span class="tok-com"># homogeneous; the common case</span>
+mixed    = [<span class="tok-num">42</span>, <span class="tok-str">"hello"</span>, <span class="tok-kw">True</span>, <span class="tok-kw">None</span>, [<span class="tok-num">1</span>, <span class="tok-num">2</span>]]    <span class="tok-com"># mixed; legal, occasionally useful</span>
+empty    = []                                       <span class="tok-com"># a list of nothing</span>
+numbers  = <span class="tok-fn">list</span>(<span class="tok-fn">range</span>(<span class="tok-num">5</span>))                          <span class="tok-com"># [0, 1, 2, 3, 4], from any iterable</span></code></pre>
+
+<p>The choice to make one list type the default is a Python design decision worth pausing on. In Python, lists are <em>ordered, growable arrays</em>: random access by index is fast (constant time), appending at the end is fast (amortised constant), and almost everything you would actually want to do with a sequence is supported. The price you pay is that operations near the <em>front</em> of the list are slow, because the array has to shift; for those, you reach for <code>collections.deque</code>, which we will meet in Chapter 12. But the alternative cost is sharper: forcing every beginner to learn three sequence types and choose between them, before they have written a useful program, would have been a worse trade for the language. Python's principle here is the Zen line at the head of the chapter.</p>
+
+<div class="definition">
+  <div class="term">List</div>
+  <p>An ordered, mutable sequence written as <code>[v1, v2, ...]</code>. The type is <code>list</code>. Implemented in CPython as a dynamic array of <code>PyObject *</code> pointers, which makes random access and append fast (O(1)) and operations near the front slow (O(n)). It is the default container in Python for any "collection of things".</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: The Workhorse</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/tutorial/datastructures.html#more-on-lists" target="_blank" rel="noopener">Python tutorial: More on Lists</a><span class="source">official, brief, useful</span></li>
+    <li><a href="https://docs.python.org/3/library/stdtypes.html#typesseq-list" target="_blank" rel="noopener">list reference</a><span class="source">the complete API</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 8.2 ===================== -->
+<h2 id="ch8-2"><span class="num">8.2</span>How a List Is Stored</h2>
+
+<p>Almost every performance fact about Python lists falls out of one structural decision: a list is implemented in CPython as a <em>resizable array of pointers to objects</em>. It is not a linked list (despite the name) and never has been. Each slot in the array holds a <code>PyObject *</code>, an address pointing at an object that lives elsewhere in memory. The list itself owns the array; the objects it points at are owned by the reference-counting system we met in Chapter 2.</p>
+
+<figure>
+  <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <defs>
+      <marker id="lst1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/>
+      </marker>
+    </defs>
+    <text x="360" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">CPython list: an array of pointers, not a chain of nodes</text>
+
+    <!-- list header -->
+    <rect x="40" y="56" width="140" height="64" fill="#fff" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="48" y="72" font-size="10.5" font-weight="700" fill="#0f172a">PyListObject</text>
+    <text x="48" y="90" font-size="11" font-family="JetBrains Mono, monospace" fill="#475569">ob_size = 4</text>
+    <text x="48" y="105" font-size="11" font-family="JetBrains Mono, monospace" fill="#475569">allocated = 8</text>
+    <text x="48" y="120" font-size="11" font-family="JetBrains Mono, monospace" fill="#475569">ob_item ──┐</text>
+
+    <!-- array of pointers -->
+    <line x1="160" y1="116" x2="220" y2="148" stroke="#0f172a" stroke-width="1.5" marker-end="url(#lst1)"/>
+    <rect x="220" y="138" width="380" height="36" fill="#fff" stroke="#0f172a"/>
+    <g font-family="JetBrains Mono, monospace" font-size="10" fill="#0f172a">
+      <line x1="270" y1="138" x2="270" y2="174" stroke="#0f172a"/>
+      <line x1="320" y1="138" x2="320" y2="174" stroke="#0f172a"/>
+      <line x1="370" y1="138" x2="370" y2="174" stroke="#0f172a"/>
+      <line x1="420" y1="138" x2="420" y2="174" stroke="#0f172a" stroke-dasharray="3 2"/>
+      <line x1="470" y1="138" x2="470" y2="174" stroke="#0f172a" stroke-dasharray="3 2"/>
+      <line x1="520" y1="138" x2="520" y2="174" stroke="#0f172a" stroke-dasharray="3 2"/>
+      <line x1="570" y1="138" x2="570" y2="174" stroke="#0f172a" stroke-dasharray="3 2"/>
+      <text x="245" y="161" text-anchor="middle">[0]</text>
+      <text x="295" y="161" text-anchor="middle">[1]</text>
+      <text x="345" y="161" text-anchor="middle">[2]</text>
+      <text x="395" y="161" text-anchor="middle">[3]</text>
+      <text x="445" y="161" text-anchor="middle" fill="#94a3b8">·</text>
+      <text x="495" y="161" text-anchor="middle" fill="#94a3b8">·</text>
+      <text x="545" y="161" text-anchor="middle" fill="#94a3b8">·</text>
+      <text x="595" y="161" text-anchor="middle" fill="#94a3b8">·</text>
+    </g>
+    <text x="448" y="195" font-size="10" fill="#475569" font-style="italic" text-anchor="middle">slots 0–3 in use, 4–7 reserved (over-allocation for cheap append)</text>
+
+    <!-- target objects -->
+    <rect x="220" y="208" width="48" height="32" fill="#eef4f9" stroke="#0f172a"/>
+    <text x="244" y="228" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace">10</text>
+    <line x1="244" y1="174" x2="244" y2="208" stroke="#475569" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+    <rect x="276" y="208" width="48" height="32" fill="#eef4f9" stroke="#0f172a"/>
+    <text x="300" y="228" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace">"hi"</text>
+    <line x1="294" y1="174" x2="294" y2="208" stroke="#475569" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+    <rect x="332" y="208" width="48" height="32" fill="#eef4f9" stroke="#0f172a"/>
+    <text x="356" y="228" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace">3.14</text>
+    <line x1="344" y1="174" x2="344" y2="208" stroke="#475569" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+    <rect x="388" y="208" width="48" height="32" fill="#eef4f9" stroke="#0f172a"/>
+    <text x="412" y="228" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace">None</text>
+    <line x1="394" y1="174" x2="394" y2="208" stroke="#475569" stroke-width="0.8" stroke-dasharray="2 2"/>
+  </svg>
+  <figcaption><strong>Figure 8.1.</strong> A four-element Python list, laid out as CPython actually stores it: a small header pointing at a contiguous array of references, where each slot points at an object somewhere on the heap. The list owns the array; it does not own the objects.</figcaption>
+</figure>
+
+<p>Two practical consequences follow at once. <strong>Random access is fast</strong>, because reaching <code>lst[k]</code> requires only adding <code>k</code> times a pointer-size to a known base address: constant time, regardless of the list's length. <strong>Append is amortised fast</strong>, because Python over-allocates the underlying array; pushing one item usually just writes into a pre-reserved slot. When the reserved slots run out, Python grows the array geometrically (roughly 12.5% over the current size, rounded to round numbers), copying once. The cost of that copy spreads across all the appends that filled the array, so on average each append is constant time.</p>
+
+<p>The flip side is also forced: <strong>inserting at or near the front is O(n)</strong>, because every later slot has to shift up by one to make room. <strong>Deleting from the middle is O(n)</strong> for the same reason. And <strong>searching for membership</strong> (<code>x in lst</code>) is O(n) because the list has no idea where to look; if you need fast membership, you need a set or a dict instead.</p>
+
+<table>
+  <tr><th>Operation</th><th>Cost</th><th>Why</th></tr>
+  <tr><td><code>lst[k]</code></td><td>O(1)</td><td>direct array index</td></tr>
+  <tr><td><code>lst[k] = x</code></td><td>O(1)</td><td>direct array write</td></tr>
+  <tr><td><code>lst.append(x)</code></td><td>O(1) amortised</td><td>uses a reserved slot; occasional resize</td></tr>
+  <tr><td><code>lst.pop()</code></td><td>O(1)</td><td>drops the last slot</td></tr>
+  <tr><td><code>lst.insert(0, x)</code></td><td>O(n)</td><td>shifts every element up by one</td></tr>
+  <tr><td><code>lst.pop(0)</code></td><td>O(n)</td><td>shifts every element down by one</td></tr>
+  <tr><td><code>x in lst</code></td><td>O(n)</td><td>linear scan, no index</td></tr>
+  <tr><td><code>len(lst)</code></td><td>O(1)</td><td>stored on the list header</td></tr>
+  <tr><td><code>lst.sort()</code></td><td>O(n log n)</td><td>TimSort (Section 8.5)</td></tr>
+</table>
+
+<div class="note">
+  <span class="label">A useful number</span>
+  <p>The over-allocation pattern used by CPython since the early 2000s grows the array by roughly 12.5% on each resize, never less than a small fixed minimum. The exact formula has been tuned over the years; the implementation is in <code>Objects/listobject.c</code> in the CPython source. The detail rarely matters, but the principle does: <code>append</code> is fast not because each call is cheap but because the cost is amortised over many calls.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: List Internals</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/faq/design.html#how-are-lists-implemented-in-cpython" target="_blank" rel="noopener">Python FAQ: How are lists implemented in CPython?</a><span class="source">straight from the source</span></li>
+    <li><a href="https://wiki.python.org/moin/TimeComplexity" target="_blank" rel="noopener">Time Complexity</a><span class="source">the operation-by-operation table</span></li>
+    <li><a href="https://github.com/python/cpython/blob/main/Objects/listobject.c" target="_blank" rel="noopener">CPython listobject.c</a><span class="source">readable C source for the curious</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 8.3 ===================== -->
+<h2 id="ch8-3"><span class="num">8.3</span>Creating and Indexing</h2>
+
+<p>Lists are created in three forms. Most often, you write a <em>list literal</em> with square brackets. When the items already live in another iterable (a string, a range, a generator), you call <code>list()</code> to materialise them. When you need a fixed-size list initialised with a single value, you multiply.</p>
+
+<pre data-lang="python"><code>letters = [<span class="tok-str">"a"</span>, <span class="tok-str">"b"</span>, <span class="tok-str">"c"</span>]            <span class="tok-com"># literal</span>
+chars   = <span class="tok-fn">list</span>(<span class="tok-str">"hello"</span>)             <span class="tok-com"># ['h', 'e', 'l', 'l', 'o']</span>
+zeros   = [<span class="tok-num">0</span>] * <span class="tok-num">5                       </span><span class="tok-com"># [0, 0, 0, 0, 0]</span>
+merged  = [*[<span class="tok-num">1</span>, <span class="tok-num">2</span>], *[<span class="tok-num">3</span>, <span class="tok-num">4</span>]]         <span class="tok-com"># [1, 2, 3, 4], splat-merge</span></code></pre>
+
+<p>Once a list exists, you reach into it the same way you reached into a string in Chapter 5. The mechanics are identical (Python's sequence protocol is uniform), so we cover them quickly here.</p>
+
+<pre data-lang="python"><code>xs = [<span class="tok-num">10</span>, <span class="tok-num">20</span>, <span class="tok-num">30</span>, <span class="tok-num">40</span>, <span class="tok-num">50</span>]
+xs[<span class="tok-num">0</span>]            <span class="tok-com"># 10                first</span>
+xs[-<span class="tok-num">1</span>]           <span class="tok-com"># 50                last (negative wraps)</span>
+xs[<span class="tok-num">1</span>:<span class="tok-num">4</span>]          <span class="tok-com"># [20, 30, 40]      slice: half-open [start, stop)</span>
+xs[:<span class="tok-num">3</span>]           <span class="tok-com"># [10, 20, 30]      from the start</span>
+xs[<span class="tok-num">3</span>:]           <span class="tok-com"># [40, 50]          to the end</span>
+xs[::<span class="tok-num">2</span>]          <span class="tok-com"># [10, 30, 50]      every second</span>
+xs[::-<span class="tok-num">1</span>]         <span class="tok-com"># [50, 40, 30, 20, 10]  reversed</span></code></pre>
+
+<p>One important detail: <strong>slicing creates a new list</strong>. <code>xs[:]</code> is, in fact, the idiomatic way to make a shallow copy of <code>xs</code>; we will return to its limits in Section 8.6. And one detail that is unique to lists, not strings: <strong>slice assignment</strong> lets you replace, insert, or delete an entire range in one statement.</p>
+
+<div class="example">
+  <div class="example-head">Example 8.1<span class="title">Slice assignment, three useful tricks</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>xs = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>, <span class="tok-num">5</span>]
+
+<span class="tok-com"># 1. Replace a range with a different number of items:</span>
+xs[<span class="tok-num">1</span>:<span class="tok-num">4</span>] = [<span class="tok-num">99</span>]              <span class="tok-com"># [1, 99, 5]</span>
+
+<span class="tok-com"># 2. Insert several items at once without insert():</span>
+xs = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>]
+xs[<span class="tok-num">1</span>:<span class="tok-num">1</span>] = [<span class="tok-str">"a"</span>, <span class="tok-str">"b"</span>]          <span class="tok-com"># [1, 'a', 'b', 2, 3]</span>
+
+<span class="tok-com"># 3. Clear a list in place, useful when other names point at it:</span>
+xs[:] = []                       <span class="tok-com"># []  (same object, now empty)</span></code></pre>
+    <p>The third form matters because it differs from <code>xs = []</code>: rebinding the name leaves the old list untouched and still visible through any other name that pointed at it. <code>xs[:] = []</code> empties the same object in place, which every aliased name sees.</p>
+  </div>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Creating Lists</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/reference/expressions.html#slicings" target="_blank" rel="noopener">Slicings</a><span class="source">the formal grammar of slices</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 8.4 ===================== -->
+<h2 id="ch8-4"><span class="num">8.4</span>The Mutating Methods</h2>
+
+<p>A list comes with about a dozen built-in methods that change it in place. The full set fits in a small table, and almost every Python program uses at least three of them.</p>
+
+<table>
+  <tr><th>Method</th><th>What it does</th><th>Returns</th></tr>
+  <tr><td><code>lst.append(x)</code></td><td>add one item to the end</td><td>None</td></tr>
+  <tr><td><code>lst.extend(iterable)</code></td><td>add many items, one by one</td><td>None</td></tr>
+  <tr><td><code>lst.insert(i, x)</code></td><td>insert before position i</td><td>None</td></tr>
+  <tr><td><code>lst.remove(x)</code></td><td>delete the first item equal to x (raises ValueError if none)</td><td>None</td></tr>
+  <tr><td><code>lst.pop([i])</code></td><td>remove and return the last (or i-th) item</td><td>the item</td></tr>
+  <tr><td><code>lst.clear()</code></td><td>remove every item</td><td>None</td></tr>
+  <tr><td><code>lst.sort()</code></td><td>sort in place</td><td>None</td></tr>
+  <tr><td><code>lst.reverse()</code></td><td>reverse in place</td><td>None</td></tr>
+  <tr><td><code>lst.copy()</code></td><td>a shallow copy</td><td>a new list</td></tr>
+  <tr><td><code>lst.index(x)</code></td><td>position of the first item equal to x</td><td>int</td></tr>
+  <tr><td><code>lst.count(x)</code></td><td>number of occurrences of x</td><td>int</td></tr>
+</table>
+
+<p>Notice a pattern that catches beginners. <strong>Methods that mutate a list return <code>None</code>, not the list.</strong> This is deliberate: it would be a small disaster if <code>lst.sort()</code> returned the list, because the very next thing a user would write is <code>sorted_lst = lst.sort()</code>, expecting a new sorted list and getting a sorted in place plus a name bound to <code>None</code>. The convention forces you to choose, by giving you two different names for the two different actions.</p>
+
+<div class="warning">
+  <span class="label">The classic mistake</span>
+  <p><code>xs = xs.sort()</code> sets <code>xs</code> to <code>None</code>, because <code>sort</code> returned nothing. You almost certainly meant <code>xs.sort()</code> (which sorts in place and leaves <code>xs</code> bound to the sorted list) or <code>xs = sorted(xs)</code> (which builds a new list and rebinds <code>xs</code> to it). The two are the right answer for different situations: Section 8.5 covers when to use which.</p>
+</div>
+
+<div class="example">
+  <div class="example-head">Example 8.2<span class="title">Append versus extend</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>xs = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>]
+xs.append([<span class="tok-num">4</span>, <span class="tok-num">5</span>])      <span class="tok-com"># [1, 2, 3, [4, 5]] , one item added: the whole list</span>
+
+ys = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>]
+ys.extend([<span class="tok-num">4</span>, <span class="tok-num">5</span>])      <span class="tok-com"># [1, 2, 3, 4, 5]  , many items added: the contents</span></code></pre>
+    <p>The mistake of using <code>append</code> when you meant <code>extend</code> is among the most common in beginner code, because they sound similar. <code>append</code> takes a value and adds it; if the value happens to be a list, you get a list-inside-a-list. <code>extend</code> takes an iterable and pulls its items in one at a time.</p>
+  </div>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: List Methods</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/tutorial/datastructures.html#more-on-lists" target="_blank" rel="noopener">More on lists</a><span class="source">the full Python tutorial section</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 8.5 ===================== -->
+<h2 id="ch8-5"><span class="num">8.5</span>Sorting, Properly</h2>
+
+<p>Python sorts with a custom algorithm called <strong>TimSort</strong>, designed by Tim Peters in 2002. It is a hybrid of insertion sort (fast for short runs and partially-sorted data) and merge sort (good asymptotic behaviour); it is <em>stable</em>, meaning items that compare equal keep their original relative order; and it is the default sort algorithm in Java, Android, and other places besides. Its average and worst case are O(n log n), and on data that is already nearly sorted it can approach O(n).</p>
+
+<p>The two ways to invoke it are well worth distinguishing.</p>
+
+<pre data-lang="python"><code>xs = [<span class="tok-num">3</span>, <span class="tok-num">1</span>, <span class="tok-num">4</span>, <span class="tok-num">1</span>, <span class="tok-num">5</span>]
+
+xs.sort()                  <span class="tok-com"># in-place: mutates xs, returns None</span>
+ys = <span class="tok-fn">sorted</span>(xs)            <span class="tok-com"># new list: leaves the argument unchanged, returns the sorted list</span>
+
+xs.sort(reverse=<span class="tok-kw">True</span>)      <span class="tok-com"># descending</span></code></pre>
+
+<p>For anything beyond plain values, the <code>key</code> argument is where sorting becomes a real tool. <code>key=f</code> means "decide each item's place by what <code>f</code> returns for it, not by the item itself". The function is called once per item (not once per comparison), so even an expensive key function is fine.</p>
+
+<div class="example">
+  <div class="example-head">Example 8.3<span class="title">Sorting by a key, and by several</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>people = [
+    {<span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>,     <span class="tok-str">"age"</span>: <span class="tok-num">28</span>, <span class="tok-str">"city"</span>: <span class="tok-str">"London"</span>},
+    {<span class="tok-str">"name"</span>: <span class="tok-str">"Linus"</span>,   <span class="tok-str">"age"</span>: <span class="tok-num">54</span>, <span class="tok-str">"city"</span>: <span class="tok-str">"Helsinki"</span>},
+    {<span class="tok-str">"name"</span>: <span class="tok-str">"Caroline"</span>,<span class="tok-str">"age"</span>: <span class="tok-num">28</span>, <span class="tok-str">"city"</span>: <span class="tok-str">"Paris"</span>},
+]
+
+<span class="tok-fn">sorted</span>(people, key=<span class="tok-kw">lambda</span> p: p[<span class="tok-str">"age"</span>])
+<span class="tok-com"># Ada, Caroline, Linus, ties broken by insertion order (stable sort)</span>
+
+<span class="tok-com"># Sort by (age, name) to break ties on name:</span>
+<span class="tok-fn">sorted</span>(people, key=<span class="tok-kw">lambda</span> p: (p[<span class="tok-str">"age"</span>], p[<span class="tok-str">"name"</span>]))
+
+<span class="tok-com"># With operator.itemgetter, faster and cleaner than a lambda:</span>
+<span class="tok-kw">from</span> operator <span class="tok-kw">import</span> itemgetter
+<span class="tok-fn">sorted</span>(people, key=itemgetter(<span class="tok-str">"age"</span>, <span class="tok-str">"name"</span>))</code></pre>
+    <p>Two facts to internalise. <strong>The sort is stable</strong>, so when two ages tie, the original order is preserved (Ada stays before Caroline in the first example because she was input first). And <strong>multi-field sorts are a tuple key</strong>: comparing tuples compares element by element, exactly as you want.</p>
+  </div>
+</div>
+
+<div class="note">
+  <span class="label">Stability, used well</span>
+  <p>Because Python's sort is stable, you can sort a list by several criteria by sorting <em>multiple times</em>, least significant first. To sort by age (primary) then name (secondary), one elegant way is: sort by name first, then by age. The age sort will preserve the name order for ties. This trick is not always the fastest, but it scales to any number of criteria without building a tuple key.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Sorting</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/howto/sorting.html" target="_blank" rel="noopener">Sorting HOWTO</a><span class="source">official, with the tuple-key idiom and operator.itemgetter</span></li>
+    <li><a href="https://github.com/python/cpython/blob/main/Objects/listsort.txt" target="_blank" rel="noopener">Tim Peters' notes on TimSort</a><span class="source">the original design document, in CPython</span></li>
+    <li><a href="https://en.wikipedia.org/wiki/Timsort" target="_blank" rel="noopener">TimSort on Wikipedia</a><span class="source">the algorithm in full</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 8.6 ===================== -->
+<h2 id="ch8-6"><span class="num">8.6</span>Copy and the Aliasing Trap</h2>
+
+<p>Chapter 3 introduced the rule that names are labels on values, not boxes; <code>b = a</code> binds a second name to the same object. The list version of that rule is where it bites hardest, because lists are mutable and mutating one through one name is visible through the other.</p>
+
+<pre data-lang="python"><code>a = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>]
+b = a              <span class="tok-com"># NOT a copy, b is the same list, with a second name</span>
+b.append(<span class="tok-num">4</span>)
+<span class="tok-fn">print</span>(a)           <span class="tok-com"># [1, 2, 3, 4], a saw it too</span></code></pre>
+
+<p>To make an independent copy, you ask for one explicitly. Three forms all do the same thing for a flat list:</p>
+
+<pre data-lang="python"><code>b = a.copy()         <span class="tok-com"># the explicit method (Python 3.3+)</span>
+b = a[:]             <span class="tok-com"># the slice idiom, older but still common</span>
+b = <span class="tok-fn">list</span>(a)          <span class="tok-com"># the constructor</span></code></pre>
+
+<p>Each of these makes a <em>shallow</em> copy: the outer list is new, but the items inside it are still the same objects as in the original. For a list of immutable values (numbers, strings, tuples) that is all you ever need. For a list that contains <em>other</em> mutable objects, especially other lists, shallow copying is not enough, because both the original and the copy still share the inner objects.</p>
+
+<figure>
+  <svg viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <text x="360" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a"><tspan font-family="JetBrains Mono, monospace">grid = [[0] * 3] * 3</tspan> , and why three rows change at once</text>
+
+    <!-- outer list -->
+    <rect x="60" y="60" width="220" height="32" fill="#fff" stroke="#0f172a"/>
+    <text x="60" y="52" font-size="10" font-weight="700" fill="#0f172a">grid</text>
+    <line x1="120" y1="60" x2="120" y2="92" stroke="#0f172a"/>
+    <line x1="180" y1="60" x2="180" y2="92" stroke="#0f172a"/>
+    <line x1="240" y1="60" x2="240" y2="92" stroke="#0f172a"/>
+    <g font-family="JetBrains Mono, monospace" font-size="11">
+      <text x="90" y="80" text-anchor="middle">[0]</text>
+      <text x="150" y="80" text-anchor="middle">[1]</text>
+      <text x="210" y="80" text-anchor="middle">[2]</text>
+    </g>
+
+    <!-- arrows from each outer slot to the SAME inner row -->
+    <line x1="90" y1="92" x2="400" y2="148" stroke="#cf222e" stroke-width="1.4"/>
+    <line x1="150" y1="92" x2="400" y2="152" stroke="#cf222e" stroke-width="1.4"/>
+    <line x1="210" y1="92" x2="400" y2="156" stroke="#cf222e" stroke-width="1.4"/>
+
+    <!-- the shared inner row -->
+    <rect x="400" y="140" width="240" height="32" fill="#fdeaea" stroke="#cf222e" stroke-width="1.5"/>
+    <text x="400" y="132" font-size="10" font-weight="700" fill="#b91c1c">the only inner list (shared)</text>
+    <line x1="460" y1="140" x2="460" y2="172" stroke="#cf222e"/>
+    <line x1="520" y1="140" x2="520" y2="172" stroke="#cf222e"/>
+    <line x1="580" y1="140" x2="580" y2="172" stroke="#cf222e"/>
+    <g font-family="JetBrains Mono, monospace" font-size="11" fill="#0f172a">
+      <text x="430" y="160" text-anchor="middle">0</text>
+      <text x="490" y="160" text-anchor="middle">0</text>
+      <text x="550" y="160" text-anchor="middle">0</text>
+      <text x="610" y="160" text-anchor="middle">0</text>
+    </g>
+
+    <text x="360" y="210" text-anchor="middle" font-size="11" fill="#475569" font-style="italic">All three "rows" are one list with three labels on it.</text>
+    <text x="360" y="226" text-anchor="middle" font-size="11" fill="#475569" font-style="italic">grid[0][0] = 9 changes the single inner list, which every row sees.</text>
+  </svg>
+  <figcaption><strong>Figure 8.2.</strong> The famous <code>[[0] * 3] * 3</code> trap. The outer multiplication does not produce three independent rows; it produces three references to the <em>one</em> inner list. To get genuine independence, build each row separately with a comprehension: <code>[[0] * 3 for _ in range(3)]</code>.</figcaption>
+</figure>
+
+<p>The remedy for nested mutable structures is the <code>copy.deepcopy</code> function, which copies all the way down. It is more expensive than a shallow copy, so reach for it only when you need it.</p>
+
+<pre data-lang="python"><code><span class="tok-kw">import</span> copy
+nested = [[<span class="tok-num">1</span>, <span class="tok-num">2</span>], [<span class="tok-num">3</span>, <span class="tok-num">4</span>]]
+shallow = nested.copy()
+deep    = copy.deepcopy(nested)
+
+nested[<span class="tok-num">0</span>].append(<span class="tok-num">99</span>)
+<span class="tok-fn">print</span>(shallow)     <span class="tok-com"># [[1, 2, 99], [3, 4]], shallow shares the inner lists</span>
+<span class="tok-fn">print</span>(deep)        <span class="tok-com"># [[1, 2],     [3, 4]], deep is independent all the way down</span></code></pre>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Copying</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/library/copy.html" target="_blank" rel="noopener">copy, shallow and deep copy operations</a><span class="source">the official reference</span></li>
+    <li><a href="https://nedbatchelder.com/text/names.html" target="_blank" rel="noopener">Ned Batchelder: names and values</a><span class="source">the canonical explanation of why this trap exists</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 8.7 ===================== -->
+<h2 id="ch8-7"><span class="num">8.7</span>Comprehensions in Depth</h2>
+
+<p>A list comprehension is a compact one-expression form for building a list out of another iterable. The basic shape is <code>[expression for item in iterable]</code>; with a filter, <code>[expression for item in iterable if condition]</code>. Read aloud it sounds like English ("the square of n, for each n in the range, if n is even"), and once it is in your fingers it becomes the most natural way to think about most transformations.</p>
+
+<pre data-lang="python"><code>[x * x <span class="tok-kw">for</span> x <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">10</span>)]                       <span class="tok-com"># [0, 1, 4, 9, ..., 81]</span>
+[x <span class="tok-kw">for</span> x <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">10</span>) <span class="tok-kw">if</span> x % <span class="tok-num">2</span> == <span class="tok-num">0</span>]            <span class="tok-com"># [0, 2, 4, 6, 8]</span>
+[w.upper() <span class="tok-kw">for</span> w <span class="tok-kw">in</span> [<span class="tok-str">"a"</span>, <span class="tok-str">"b"</span>, <span class="tok-str">"c"</span>]]               <span class="tok-com"># ['A', 'B', 'C']</span></code></pre>
+
+<p>The shape generalises in two directions that beginners often miss. <strong>Multiple <code>for</code> clauses</strong> nest: the leftmost iterates slowest, exactly as a series of nested loops would, and the values from all clauses are visible in the expression. <strong>Conditional expressions in the value position</strong> ((<code>expr_true if cond else expr_false</code>)) let you transform differently per item.</p>
+
+<div class="example">
+  <div class="example-head">Example 8.4<span class="title">The five comprehension shapes</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-com"># 1. Transform every item</span>
+squares = [n * n <span class="tok-kw">for</span> n <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">6</span>)]
+<span class="tok-com"># [0, 1, 4, 9, 16, 25]</span>
+
+<span class="tok-com"># 2. Filter</span>
+evens = [n <span class="tok-kw">for</span> n <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">10</span>) <span class="tok-kw">if</span> n % <span class="tok-num">2</span> == <span class="tok-num">0</span>]
+<span class="tok-com"># [0, 2, 4, 6, 8]</span>
+
+<span class="tok-com"># 3. Branch per item (conditional in the expression position)</span>
+parity = [<span class="tok-str">"even"</span> <span class="tok-kw">if</span> n % <span class="tok-num">2</span> == <span class="tok-num">0</span> <span class="tok-kw">else</span> <span class="tok-str">"odd"</span> <span class="tok-kw">for</span> n <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">5</span>)]
+<span class="tok-com"># ['even', 'odd', 'even', 'odd', 'even']</span>
+
+<span class="tok-com"># 4. Cartesian product (two for clauses)</span>
+pairs = [(x, y) <span class="tok-kw">for</span> x <span class="tok-kw">in</span> [<span class="tok-num">1</span>, <span class="tok-num">2</span>] <span class="tok-kw">for</span> y <span class="tok-kw">in</span> [<span class="tok-str">"a"</span>, <span class="tok-str">"b"</span>]]
+<span class="tok-com"># [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]</span>
+
+<span class="tok-com"># 5. Flatten</span>
+flat = [x <span class="tok-kw">for</span> row <span class="tok-kw">in</span> [[<span class="tok-num">1</span>, <span class="tok-num">2</span>], [<span class="tok-num">3</span>, <span class="tok-num">4</span>]] <span class="tok-kw">for</span> x <span class="tok-kw">in</span> row]
+<span class="tok-com"># [1, 2, 3, 4]</span></code></pre>
+    <p>Read multiple <code>for</code> clauses left to right, just as if they were nested. The fifth form, flattening, is worth memorising: it is the comprehension version of two nested loops appending into a single list.</p>
+  </div>
+</div>
+
+<p>Comprehensions are also faster than the equivalent <code>for</code>-and-append loop, often by a meaningful margin, because the bytecode is tighter and avoids the repeated attribute lookup on <code>list.append</code>. They are not magic, however; they are still <code>O(n)</code> in the size of the iterable, and a complicated expression inside the brackets is exactly as expensive as the equivalent code in a loop. The right question to ask before reaching for one is not "is it faster?" but "is it clearer?".</p>
+
+<div class="warning">
+  <span class="label">When NOT to use a comprehension</span>
+  <p>If the expression has side effects (printing, writing files, calling an API), use a plain <code>for</code> loop. Comprehensions are for building values; loops are for performing actions. A comprehension whose only purpose is to call <code>print</code> on each item is universally agreed to be ugly Python. The same goes for any comprehension that needs more than one nested <code>if</code>: at that point, an ordinary loop is clearer.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Comprehensions</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions" target="_blank" rel="noopener">List comprehensions, official tutorial</a><span class="source">the full grammar with examples</span></li>
+    <li><a href="https://peps.python.org/pep-0202/" target="_blank" rel="noopener">PEP 202: List Comprehensions</a><span class="source">the original 2000 proposal</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 8.8 ===================== -->
+<h2 id="ch8-8"><span class="num">8.8</span>Performance Pitfalls, and When Not to Use a List</h2>
+
+<p>The list is the right answer to most problems, but it is not the right answer to all problems, and the situations where it is wrong are predictable enough to be worth memorising. Four of them are common and avoidable.</p>
+
+<h3>1. Membership tests inside a loop</h3>
+
+<p>If you check whether a value is in a list, the cost is O(n). Doing that inside another loop is O(n²), and at scale it crawls. The fix is to put the values into a <code>set</code>, where membership is O(1).</p>
+
+<pre data-lang="python"><code><span class="tok-com"># Slow: O(n * m), n items, each checked against an m-element list</span>
+banned = [<span class="tok-str">"alice"</span>, <span class="tok-str">"bob"</span>, ...]      <span class="tok-com"># thousands</span>
+allowed = [u <span class="tok-kw">for</span> u <span class="tok-kw">in</span> users <span class="tok-kw">if</span> u <span class="tok-kw">not</span> <span class="tok-kw">in</span> banned]
+
+<span class="tok-com"># Fast: O(n + m)</span>
+banned = <span class="tok-fn">set</span>([<span class="tok-str">"alice"</span>, <span class="tok-str">"bob"</span>, ...])
+allowed = [u <span class="tok-kw">for</span> u <span class="tok-kw">in</span> users <span class="tok-kw">if</span> u <span class="tok-kw">not</span> <span class="tok-kw">in</span> banned]</code></pre>
+
+<h3>2. Inserting or popping at the front in a loop</h3>
+
+<p>Every <code>insert(0, x)</code> or <code>pop(0)</code> shifts the entire list. If you find yourself doing this in a loop, the right container is <code>collections.deque</code> ("double-ended queue"), which gives you O(1) operations at both ends.</p>
+
+<pre data-lang="python"><code><span class="tok-kw">from</span> collections <span class="tok-kw">import</span> deque
+queue = deque([<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>])
+queue.appendleft(<span class="tok-num">0</span>)        <span class="tok-com"># O(1) prepend</span>
+queue.popleft()             <span class="tok-com"># O(1) pop from the front</span></code></pre>
+
+<h3>3. Modifying a list while iterating over it</h3>
+
+<p>Adding to or removing from a list while a <code>for</code> loop walks over it leads to skipped items, infinite loops, or both. The fix is to iterate over a copy, or to build a new list with a comprehension.</p>
+
+<pre data-lang="python"><code><span class="tok-com"># Buggy: skips an item every time one is removed</span>
+xs = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>]
+<span class="tok-kw">for</span> x <span class="tok-kw">in</span> xs:
+    <span class="tok-kw">if</span> x % <span class="tok-num">2</span> == <span class="tok-num">0</span>:
+        xs.remove(x)
+<span class="tok-fn">print</span>(xs)   <span class="tok-com"># [1, 3, 4] , the 4 was missed!</span>
+
+<span class="tok-com"># Fix: build a new list rather than mutate while iterating</span>
+xs = [x <span class="tok-kw">for</span> x <span class="tok-kw">in</span> xs <span class="tok-kw">if</span> x % <span class="tok-num">2</span> != <span class="tok-num">0</span>]</code></pre>
+
+<h3>4. Building a long list by concatenation in a loop</h3>
+
+<p>The expression <code>result = result + [x]</code> builds a new list every iteration, copying everything so far. That makes the whole loop O(n²). Use <code>append</code>, which mutates in place at O(1) amortised, or build with a comprehension.</p>
+
+<pre data-lang="python"><code><span class="tok-com"># Slow, O(n²)</span>
+result = []
+<span class="tok-kw">for</span> x <span class="tok-kw">in</span> source:
+    result = result + [x]
+
+<span class="tok-com"># Fast, O(n)</span>
+result = []
+<span class="tok-kw">for</span> x <span class="tok-kw">in</span> source:
+    result.append(x)
+
+<span class="tok-com"># Idiomatic, also O(n)</span>
+result = [x <span class="tok-kw">for</span> x <span class="tok-kw">in</span> source]</code></pre>
+
+<div class="note">
+  <span class="label">When to reach past the list</span>
+  <p>Use a <code>set</code> when order does not matter and membership does. Use a <code>tuple</code> when the data is fixed and you want to communicate that. Use a <code>dict</code> when you have key-to-value lookups. Use a <code>deque</code> when you push and pop at both ends. Use a <code>numpy.ndarray</code> when you need numerical work on a million-element array at near-C speed. The list is the default; the others exist for the cases where the default would mislead.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Choosing a Container</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/library/collections.html#collections.deque" target="_blank" rel="noopener">collections.deque</a><span class="source">double-ended queue, O(1) at both ends</span></li>
+    <li><a href="https://docs.python.org/3/tutorial/datastructures.html#using-lists-as-queues" target="_blank" rel="noopener">Using lists as queues</a><span class="source">the Python tutorial's own warning</span></li>
+  </ul>
+</div>
+
+<hr class="section-rule"/>
+
+<!-- ===================== EXERCISES ===================== -->
+<h2 id="ch8-ex">Exercises</h2>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.1<span class="title">Predict the cost</span></div>
+  <p>For each operation, predict whether it is O(1), O(n), or O(n²), and explain in one sentence why: (a) <code>xs.append(x)</code>; (b) <code>xs.insert(0, x)</code>; (c) <code>x in xs</code>; (d) <code>xs[k]</code>; (e) <code>len(xs)</code>; (f) <code>xs.sort()</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.2<span class="title">Append vs extend</span></div>
+  <p>Without running them, predict the contents of <code>xs</code> after each: (a) <code>xs = [1, 2]; xs.append([3, 4])</code>; (b) <code>xs = [1, 2]; xs.extend([3, 4])</code>; (c) <code>xs = [1, 2]; xs += [3, 4]</code>. Explain which two produce identical results and why.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.3<span class="title">Slice surgery</span></div>
+  <p>Starting from <code>xs = [10, 20, 30, 40, 50]</code>, perform these in order: replace the middle three items with the single value <code>99</code>; insert <code>0</code> at the beginning without using <code>insert</code>; clear the list in place (do <em>not</em> rebind <code>xs</code> to a new list). Show each result.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.4<span class="title">Sort by a key</span></div>
+  <p>Given <code>people = [("Ada", 28), ("Linus", 54), ("Caroline", 28)]</code>, sort them by age, then by name. Then sort them by name length. Use the <code>key</code> argument; no manual loops.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.5<span class="title">The aliasing bug</span></div>
+  <p>Show, in three lines, the bug in <code>b = a; b.append(99)</code>. Then write the fix two different ways (the explicit method and the slice idiom). Predict whether <code>copy.deepcopy</code> would be necessary if the list were <code>a = [[1, 2], [3, 4]]</code>, and verify by trying both.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.6<span class="title">A 3x3 grid done correctly</span></div>
+  <p>Write code that produces a 3x3 grid initialised to zero where modifying <code>grid[0][0]</code> does not change <code>grid[1][0]</code>. Show why <code>[[0] * 3] * 3</code> fails this test and how a list comprehension fixes it.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.7<span class="title">Comprehensions</span></div>
+  <p>Write each as a single list comprehension: (a) the squares of the odd numbers from 1 to 10; (b) the words longer than three characters in <code>"the quick brown fox jumps over the lazy dog".split()</code>, all uppercased; (c) the (x, y) coordinates of every cell in a 3x3 grid; (d) the elements of <code>[[1, 2], [3, 4], [5, 6]]</code> as a single flat list.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 8.8<span class="title">Container choice</span></div>
+  <p>For each scenario, name the right container (list, tuple, set, dict, or deque) and justify your choice: (a) a queue of pending jobs to be processed in order; (b) a collection of unique user IDs you need to test membership against; (c) the coordinates of a single point on a 2D plane; (d) a phone book mapping names to numbers; (e) the rows of a CSV file you will sort and write back.</p>
+</div>
+
+<!-- ===================== SOLUTIONS ===================== -->
+<div class="solutions" id="ch8-sol">
+  <h2>Solutions to Chapter 8 Exercises</h2>
+
+  <div class="solution">
+    <h3>Solution 8.1: Predict the cost</h3>
+    <p>(a) O(1) amortised, because over-allocation makes most appends a single write. (b) O(n), because every later element shifts up by one. (c) O(n), because the list has no index and must scan. (d) O(1), direct array access by offset. (e) O(1), the length is stored on the list header. (f) O(n log n) average, the cost of TimSort. The pattern that ties all six together: list operations on or near the end are fast; operations on or near the front are slow; positional access by index is free.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 8.2: Append vs extend</h3>
+    <p>(a) <code>[1, 2, [3, 4]]</code>. <code>append</code> adds its argument as a single item, and the argument is a list, so the result is a list-inside-a-list. (b) <code>[1, 2, 3, 4]</code>. <code>extend</code> iterates over its argument and adds each item. (c) <code>[1, 2, 3, 4]</code>. The <code>+=</code> operator on a list is equivalent to <code>extend</code>. So (b) and (c) are identical; (a) is the trap.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 8.3: Slice surgery</h3>
+<pre data-lang="python"><code>xs = [<span class="tok-num">10</span>, <span class="tok-num">20</span>, <span class="tok-num">30</span>, <span class="tok-num">40</span>, <span class="tok-num">50</span>]
+xs[<span class="tok-num">1</span>:<span class="tok-num">4</span>] = [<span class="tok-num">99</span>]      <span class="tok-com"># [10, 99, 50]</span>
+xs[:<span class="tok-num">0</span>] = [<span class="tok-num">0</span>]         <span class="tok-com"># [0, 10, 99, 50]</span>
+xs[:] = []             <span class="tok-com"># [], same object, now empty</span></code></pre>
+    <p>The first form replaces three items with one. The second inserts at position 0 by assigning to an empty slice <code>xs[:0]</code>. The third empties the existing object in place; <code>xs = []</code> would create a new empty list and leave the old one alive elsewhere.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 8.4: Sort by a key</h3>
+<pre data-lang="python"><code>people = [(<span class="tok-str">"Ada"</span>, <span class="tok-num">28</span>), (<span class="tok-str">"Linus"</span>, <span class="tok-num">54</span>), (<span class="tok-str">"Caroline"</span>, <span class="tok-num">28</span>)]
+
+<span class="tok-fn">sorted</span>(people, key=<span class="tok-kw">lambda</span> p: (p[<span class="tok-num">1</span>], p[<span class="tok-num">0</span>]))
+<span class="tok-com"># [('Ada', 28), ('Caroline', 28), ('Linus', 54)]</span>
+
+<span class="tok-fn">sorted</span>(people, key=<span class="tok-kw">lambda</span> p: <span class="tok-fn">len</span>(p[<span class="tok-num">0</span>]))
+<span class="tok-com"># [('Ada', 28), ('Linus', 54), ('Caroline', 28)]</span></code></pre>
+    <p>Tuple keys compare element by element, so <code>(age, name)</code> gives the multi-field sort. For name length, the key function is simply <code>len</code> applied to the name; the sort is stable so equal-length names keep their insertion order.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 8.5: The aliasing bug</h3>
+<pre data-lang="python"><code>a = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>]
+b = a; b.append(<span class="tok-num">99</span>)
+<span class="tok-fn">print</span>(a)            <span class="tok-com"># [1, 2, 3, 99], a changed too</span>
+
+<span class="tok-com"># Fixes for a flat list:</span>
+b = a.copy()
+b = a[:]
+
+<span class="tok-com"># For a nested list, both shallow forms still SHARE the inner lists:</span>
+a = [[<span class="tok-num">1</span>, <span class="tok-num">2</span>], [<span class="tok-num">3</span>, <span class="tok-num">4</span>]]
+b = a.copy()
+a[<span class="tok-num">0</span>].append(<span class="tok-num">99</span>)    <span class="tok-com"># mutates the inner list, visible through b too</span>
+<span class="tok-fn">print</span>(b)            <span class="tok-com"># [[1, 2, 99], [3, 4]]</span>
+
+<span class="tok-kw">import</span> copy
+b = copy.deepcopy(a) <span class="tok-com"># now truly independent</span></code></pre>
+    <p>Shallow copy duplicates the outer list but not the inner ones, so a nested structure with mutable elements still shares those elements. <code>deepcopy</code> walks the whole tree and is the right answer there.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 8.6: A 3x3 grid done correctly</h3>
+<pre data-lang="python"><code><span class="tok-com"># Wrong: three references to one inner list</span>
+grid = [[<span class="tok-num">0</span>] * <span class="tok-num">3</span>] * <span class="tok-num">3</span>
+grid[<span class="tok-num">0</span>][<span class="tok-num">0</span>] = <span class="tok-num">9</span>
+<span class="tok-fn">print</span>(grid)         <span class="tok-com"># [[9, 0, 0], [9, 0, 0], [9, 0, 0]], all three rows changed</span>
+
+<span class="tok-com"># Right: comprehension builds a fresh row each time</span>
+grid = [[<span class="tok-num">0</span>] * <span class="tok-num">3</span> <span class="tok-kw">for</span> _ <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">3</span>)]
+grid[<span class="tok-num">0</span>][<span class="tok-num">0</span>] = <span class="tok-num">9</span>
+<span class="tok-fn">print</span>(grid)         <span class="tok-com"># [[9, 0, 0], [0, 0, 0], [0, 0, 0]], only one cell changed</span></code></pre>
+    <p>The trap is in the outer <code>* 3</code>, which does not duplicate the inner list, it copies its reference three times. The comprehension evaluates <code>[0] * 3</code> separately on each iteration, producing three independent lists.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 8.7: Comprehensions</h3>
+<pre data-lang="python"><code>[n * n <span class="tok-kw">for</span> n <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">1</span>, <span class="tok-num">11</span>) <span class="tok-kw">if</span> n % <span class="tok-num">2</span> == <span class="tok-num">1</span>]   <span class="tok-com"># [1, 9, 25, 49, 81]</span>
+
+[w.upper() <span class="tok-kw">for</span> w <span class="tok-kw">in</span> <span class="tok-str">"the quick brown fox jumps over the lazy dog"</span>.split() <span class="tok-kw">if</span> <span class="tok-fn">len</span>(w) &gt; <span class="tok-num">3</span>]
+<span class="tok-com"># ['QUICK', 'BROWN', 'JUMPS', 'OVER', 'LAZY']</span>
+
+[(x, y) <span class="tok-kw">for</span> x <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">3</span>) <span class="tok-kw">for</span> y <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">3</span>)]
+<span class="tok-com"># [(0,0), (0,1), (0,2), (1,0), ..., (2,2)], 9 pairs</span>
+
+[v <span class="tok-kw">for</span> row <span class="tok-kw">in</span> [[<span class="tok-num">1</span>, <span class="tok-num">2</span>], [<span class="tok-num">3</span>, <span class="tok-num">4</span>], [<span class="tok-num">5</span>, <span class="tok-num">6</span>]] <span class="tok-kw">for</span> v <span class="tok-kw">in</span> row]
+<span class="tok-com"># [1, 2, 3, 4, 5, 6]</span></code></pre>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 8.8: Container choice</h3>
+    <p>(a) <code>collections.deque</code>, because you need O(1) pop from the front; a list would be O(n). (b) <code>set</code>, because uniqueness and fast membership are exactly what it offers. (c) <code>tuple</code>, because the two coordinates are a single record that should not change. (d) <code>dict</code>, because name-to-number is a key-value mapping. (e) <code>list</code>, because rows have order and may need to be sorted in place; the list is the default sequence and has every method you need.</p>
+  </div>
+</div>
+
+</div><!-- /chapter-inner -->
+
+<div class="page-footer">
+  <span>First Edition · 2026</span>
+  <span class="pn">Pages 218–251</span>
+  <span>Chapter 8 of 22</span>
+</div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- ================== END OF CHAPTER 8: MORE TO COME =================== -->
 <!-- ===================================================================== -->
 
 </main>

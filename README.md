@@ -15,7 +15,7 @@ A long-form study, meant to be read, not skimmed. In progress, written in public
 
 | Stage | Title | Pages | View HTML | Download PDF | Status |
 |-------|-------|------:|-----------|--------------|--------|
-| Volume I · Flagship | **The Python Book** | ~139 | [`python-mastery.html`](python-mastery.html) | [`Python-Mastery.pdf`](Python-Mastery.pdf) | 🚧 7 of 22 chapters |
+| Volume I · Flagship | **The Python Book** | ~173 | [`python-mastery.html`](python-mastery.html) | [`Python-Mastery.pdf`](Python-Mastery.pdf) | 🚧 8 of 22 chapters |
 | Volume II · Companion | **The Python Handbook** | ~50 | [`python-handbook.html`](python-handbook.html) | [`Python-Handbook.pdf`](Python-Handbook.pdf) | 🚧 6 of 24 modules |
 
 ### What's in each book
