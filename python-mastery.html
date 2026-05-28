@@ -552,9 +552,22 @@ hr.section-rule::before{content:"§ § §"}
     <a href="#ch5-sol" class="section">Solutions</a>
   </nav>
 
+  <h4>Part II (cont.)</h4>
+  <nav>
+    <a href="#ch6"><strong>6. Booleans &amp; Truthiness</strong></a>
+    <a href="#ch6-1" class="section">6.1 The Two Values</a>
+    <a href="#ch6-2" class="section">6.2 Comparison &amp; Chains</a>
+    <a href="#ch6-3" class="section">6.3 and, or, not</a>
+    <a href="#ch6-4" class="section">6.4 Truthiness, Revisited</a>
+    <a href="#ch6-5" class="section">6.5 The Conditional Expression</a>
+    <a href="#ch6-6" class="section">6.6 Pattern Matching</a>
+    <a href="#ch6-7" class="section">6.7 De Morgan &amp; Readable Logic</a>
+    <a href="#ch6-ex" class="section">Exercises</a>
+    <a href="#ch6-sol" class="section">Solutions</a>
+  </nav>
+
   <h4>Part II <em>(soon)</em></h4>
   <nav>
-    <a href="#">6. Booleans &amp; Truthiness</a>
     <a href="#">7. None &amp; the Sentinel</a>
   </nav>
 </aside>
@@ -3579,7 +3592,495 @@ re.findall(<span class="tok-str">r"\d+"</span>, <span class="tok-str">"order 17 
 </section>
 
 <!-- ===================================================================== -->
-<!-- ================== END OF CHAPTER 5: MORE TO COME =================== -->
+<!-- ================== CHAPTER 6: BOOLEANS & TRUTHINESS ================= -->
+<!-- ===================================================================== -->
+<section class="chapter" id="ch6">
+
+<div class="page-header">
+  <span class="title-left">Python · A Complete Course</span>
+  <span class="title-right">Chapter 6 · Booleans &amp; Truthiness</span>
+</div>
+
+<div class="chapter-inner">
+
+<div class="chapter-header">
+  <div class="chapter-eyebrow">Chapter 6 · Part II · The Primitives</div>
+  <h1>Booleans &amp; Truthiness</h1>
+  <p class="deck">Two values, three operators, one protocol. The whole machinery of decision in Python rests on a remarkably small idea, formalised by a self-taught English schoolmaster in 1854 and quietly built into every modern computer ever since.</p>
+</div>
+
+<div class="epigraph">
+  The respective interpretation of the symbols 0 and 1 in the system of logic are Nothing and Universe.
+  <cite>— George Boole, <em>An Investigation of the Laws of Thought</em>, 1854</cite>
+</div>
+
+<p class="opening">There is a beautiful symmetry in the fact that the language of computation, born of vacuum tubes and silicon, rests on a mathematics that was published a hundred and fifty years before any computer ran. Before Babbage's Engine, before electronic switching, before the very word <em>algorithm</em> meant what we mean by it today, George Boole worked out, in a small house in Cork, the algebra by which true and false could be manipulated like numbers. Two states, three operations, a handful of laws. That was enough, as it turned out, to organise every decision a computer would ever make.</p>
+
+<p>This chapter is short because the topic is small, but the topic is small in the way the alphabet is small: the rest of the language sits on top of it. We will look at Python's two boolean values and how they behave; the comparison operators that produce them; the logical operators that combine them, with a wrinkle no other chapter has prepared you for; the rule of <em>truthiness</em> that decides whether <em>any</em> value, not just a boolean, counts as true; the one-line conditional expression; the recent <code>match</code> statement that brings structural pattern matching to Python; and De Morgan's laws, which let you rewrite tangled negations into readable code.</p>
+
+<!-- ===================== 6.1 ===================== -->
+<h2 id="ch6-1"><span class="num">6.1</span>The Two Values</h2>
+
+<figure class="photo" style="float:right;width:210px;margin:0 0 16px 24px;">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/George_Boole_color.jpg" alt="Portrait of George Boole" loading="lazy">
+  <figcaption><strong>Figure 6.1.</strong> George Boole (1815–1864), the self-taught English mathematician whose 1854 <em>Laws of Thought</em> founded the algebra of true and false. <a href="https://en.wikipedia.org/wiki/George_Boole" target="_blank" rel="noopener">George Boole</a></figcaption>
+</figure>
+
+<p>Python has exactly two boolean values: <code>True</code> and <code>False</code>. Both are written capitalised, both are global names that refer to single, shared objects (no matter how many times you write <code>True</code> in a program, you are pointing at the very same object), and both belong to the type <code>bool</code>.</p>
+
+<p>Now a fact that we met briefly in Chapter 4 and that bears restating, because the rest of the chapter quietly depends on it: <code>bool</code> is a subclass of <code>int</code>. <code>True</code> equals <code>1</code> in every arithmetic context, <code>False</code> equals <code>0</code>, and <code>isinstance(True, int)</code> is true. This is not a strange accident; it was decided deliberately when booleans were added to the language in 2003 by PEP 285, so that all the code that had been using 0 and 1 as truth values for the previous twelve years would keep working unchanged. The consequence is small but useful: you can <code>sum</code> a sequence of comparisons to count how many are true.</p>
+
+<pre data-lang="python"><code>scores = [<span class="tok-num">82</span>, <span class="tok-num">45</span>, <span class="tok-num">91</span>, <span class="tok-num">67</span>, <span class="tok-num">30</span>, <span class="tok-num">99</span>]
+<span class="tok-fn">sum</span>(s &gt;= <span class="tok-num">60</span> <span class="tok-kw">for</span> s <span class="tok-kw">in</span> scores)   <span class="tok-com"># 4, how many passed</span></code></pre>
+
+<div class="definition">
+  <div class="term">bool</div>
+  <p>The type of the two values <code>True</code> and <code>False</code>. It is a subclass of <code>int</code>: every <code>True</code> behaves as <code>1</code> and every <code>False</code> as <code>0</code> in arithmetic. Both values are singletons, so <code>True is True</code> and <code>False is False</code> are always trivially true, but you almost never need <code>is</code> with booleans; comparing for value is the same as comparing for identity, and the value test reads better.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Booleans in Python</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0285/" target="_blank" rel="noopener">PEP 285: Adding a Bool Type</a><span class="source">why it subclasses int</span></li>
+    <li><a href="https://docs.python.org/3/library/stdtypes.html#boolean-type-bool" target="_blank" rel="noopener">Python docs: Boolean Type</a><span class="source">the official reference</span></li>
+    <li><a href="https://en.wikipedia.org/wiki/Boolean_algebra" target="_blank" rel="noopener">Boolean algebra</a><span class="source">the mathematics behind it</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 6.2 ===================== -->
+<h2 id="ch6-2"><span class="num">6.2</span>Comparison, and the Surprising Chain</h2>
+
+<p>Booleans are mostly produced by <em>comparing</em> two values. Python has six basic comparison operators, and they are the obvious ones with the obvious meanings.</p>
+
+<table>
+  <tr><th>Operator</th><th>Reads</th><th>Example</th><th>Result</th></tr>
+  <tr><td><code>==</code></td><td>equal to</td><td><code>3 == 3</code></td><td>True</td></tr>
+  <tr><td><code>!=</code></td><td>not equal to</td><td><code>3 != 4</code></td><td>True</td></tr>
+  <tr><td><code>&lt;</code></td><td>less than</td><td><code>3 &lt; 4</code></td><td>True</td></tr>
+  <tr><td><code>&gt;</code></td><td>greater than</td><td><code>4 &gt; 3</code></td><td>True</td></tr>
+  <tr><td><code>&lt;=</code></td><td>less than or equal</td><td><code>3 &lt;= 3</code></td><td>True</td></tr>
+  <tr><td><code>&gt;=</code></td><td>greater than or equal</td><td><code>3 &gt;= 3</code></td><td>True</td></tr>
+</table>
+
+<p>Under the hood, <code>a == b</code> calls <code>a.__eq__(b)</code>, which is what Chapter 3.8 promised: comparison is method dispatch on the type. The class of <code>a</code> decides what equality means, which is why <code>[1, 2] == [1, 2]</code> is true (lists compare their contents) and <code>Decimal("0.1") == 0.1</code> is false (a Decimal refuses to be equal to a binary-float approximation). The other operators reach for <code>__lt__</code>, <code>__gt__</code>, <code>__le__</code>, and <code>__ge__</code>; Python automatically tries the reflected method if the first operand returns <code>NotImplemented</code>.</p>
+
+<h3>Chained comparisons</h3>
+
+<p>Python lets you write comparisons in chains, and the meaning is exactly the mathematical one: <code>1 &lt;= x &lt;= 10</code> reads as "x is between 1 and 10 inclusive". The language is doing something subtle for you here. Under the hood, that single expression is the logical AND of two comparisons, with <code>x</code> evaluated <em>only once</em>: <code>(1 &lt;= x) and (x &lt;= 10)</code>. The short-circuit behaviour of <code>and</code> (Section 6.3) means the second comparison is skipped entirely if the first is false.</p>
+
+<div class="example">
+  <div class="example-head">Example 6.1<span class="title">A chain you would not write that way in C</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>x = <span class="tok-num">5</span>
+<span class="tok-num">1</span> &lt;= x &lt;= <span class="tok-num">10</span>            <span class="tok-com"># True, the natural way</span>
+<span class="tok-num">1</span> &lt;= x <span class="tok-kw">and</span> x &lt;= <span class="tok-num">10</span>      <span class="tok-com"># True, same meaning, more typing</span>
+
+<span class="tok-com"># Chains do not need to be monotonic; they just AND each adjacent pair:</span>
+a = <span class="tok-num">2</span>
+<span class="tok-num">1</span> &lt; a &gt; <span class="tok-num">0</span>                 <span class="tok-com"># True, (1 &lt; a) and (a &gt; 0)</span>
+<span class="tok-num">1</span> &lt; a == <span class="tok-num">2</span>                <span class="tok-com"># True, (1 &lt; a) and (a == 2)</span></code></pre>
+    <p>In C, <code>1 &lt; x &lt; 10</code> means something quite different: <code>(1 &lt; x) &lt; 10</code>, which reduces to comparing a 0-or-1 result against 10, and is silently wrong. Python's chains are the kind of small detail that makes the language pleasant to read.</p>
+  </div>
+</div>
+
+<div class="note">
+  <span class="label">Worth noting</span>
+  <p><code>!=</code> is normally just the inverse of <code>==</code>, but a class that defines <code>__eq__</code> without also defining <code>__ne__</code> gets the negation for free in Python 3. If you override one, you may safely leave the other; the dunder protocol fills in the missing piece. (This is a change from Python 2, which required both.)</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Comparisons</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/reference/expressions.html#comparisons" target="_blank" rel="noopener">Comparisons</a><span class="source">Python Language Reference, with the chained-comparison rule in full</span></li>
+    <li><a href="https://docs.python.org/3/reference/datamodel.html#object.__lt__" target="_blank" rel="noopener">Rich comparison methods</a><span class="source">how <code>__lt__</code>, <code>__eq__</code>, et al. work</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 6.3 ===================== -->
+<h2 id="ch6-3"><span class="num">6.3</span><code>and</code>, <code>or</code>, <code>not</code>: Two Wrinkles</h2>
+
+<p>The three logical operators in Python read as English and behave, for boolean inputs, exactly as you would expect: <code>a and b</code> is true when both are, <code>a or b</code> is true when at least one is, and <code>not a</code> flips the value. Two things make them interesting, and both are worth knowing well because they shape idiomatic Python.</p>
+
+<h3>Short-circuit evaluation</h3>
+
+<p>The first wrinkle is that <code>and</code> and <code>or</code> are <em>short-circuit</em>. For <code>a and b</code>, Python evaluates <code>a</code> first; if it is falsy, the whole expression cannot be true, so <code>b</code> is not evaluated at all. For <code>a or b</code>, Python evaluates <code>a</code>; if it is truthy, the whole expression must be true, so <code>b</code> is skipped. This is more than a performance trick. It lets you guard one expression with another: <code>x is not None and len(x) &gt; 0</code> never calls <code>len</code> when <code>x</code> is <code>None</code>, because the first half short-circuits.</p>
+
+<h3>They return one of the operands, not a boolean</h3>
+
+<p>The second wrinkle is more surprising, and once you see it, a whole shelf of Python idioms suddenly makes sense. <code>a and b</code> does <em>not</em> return <code>True</code> or <code>False</code>; it returns one of the actual operands. Specifically, <code>and</code> returns the first falsy value it finds, or the last value if all are truthy; <code>or</code> returns the first truthy value, or the last value if all are falsy.</p>
+
+<pre data-lang="python"><code><span class="tok-num">0</span> <span class="tok-kw">or</span> <span class="tok-str">"fallback"</span>      <span class="tok-com"># 'fallback' , 0 is falsy, so or returns the second operand</span>
+<span class="tok-str">"Ada"</span> <span class="tok-kw">or</span> <span class="tok-str">"Anon"</span>     <span class="tok-com"># 'Ada'      , first truthy value short-circuits</span>
+<span class="tok-str">"Ada"</span> <span class="tok-kw">and</span> <span class="tok-str">"Lovelace"</span>  <span class="tok-com"># 'Lovelace' , both truthy, and returns the last</span>
+<span class="tok-num">0</span> <span class="tok-kw">and</span> <span class="tok-str">"never reached"</span>   <span class="tok-com"># 0         , first falsy short-circuits</span>
+
+<span class="tok-com"># The classic default-value idiom:</span>
+display = user_input <span class="tok-kw">or</span> <span class="tok-str">"Guest"</span>    <span class="tok-com"># falls back when user_input is empty</span></code></pre>
+
+<p><code>not</code> is the exception: it always returns a true boolean, <code>True</code> or <code>False</code>, never an operand. This asymmetry is occasionally a small frustration but more often a relief, because <code>not</code> is the operator you tend to use when you actually want a boolean.</p>
+
+<figure>
+  <svg viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <defs>
+      <marker id="b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/>
+      </marker>
+    </defs>
+    <text x="360" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Short-circuit evaluation: which operand a logical operator returns</text>
+
+    <!-- a and b -->
+    <rect x="40" y="56" width="300" height="170" fill="none" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="190" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">a <tspan font-style="italic">and</tspan> b</text>
+    <rect x="60" y="92" width="80" height="36" fill="#fff" stroke="#0f172a"/>
+    <text x="100" y="115" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace">eval a</text>
+    <line x1="140" y1="110" x2="190" y2="110" stroke="#0f172a" stroke-width="1.4" marker-end="url(#b1)"/>
+    <polygon points="190,90 270,110 190,130" fill="#fff" stroke="#0f172a"/>
+    <text x="218" y="113" font-size="11" fill="#0f172a">truthy?</text>
+    <line x1="270" y1="110" x2="300" y2="110" stroke="#0f172a" stroke-width="1.4" marker-end="url(#b1)"/>
+    <text x="285" y="103" text-anchor="middle" font-size="10" font-style="italic" fill="#475569">yes</text>
+    <text x="320" y="113" font-size="12" font-family="JetBrains Mono, monospace" fill="#306998">eval b → b</text>
+    <line x1="190" y1="130" x2="190" y2="170" stroke="#0f172a" stroke-width="1.4" marker-end="url(#b1)"/>
+    <text x="200" y="160" font-size="10" font-style="italic" fill="#475569">no</text>
+    <text x="60" y="187" font-size="12" font-family="JetBrains Mono, monospace" fill="#306998">return a (the falsy one)</text>
+    <text x="190" y="215" text-anchor="middle" font-size="10.5" fill="#475569" font-style="italic">returns the first falsy, else the last</text>
+
+    <!-- a or b -->
+    <rect x="380" y="56" width="300" height="170" fill="none" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="530" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">a <tspan font-style="italic">or</tspan> b</text>
+    <rect x="400" y="92" width="80" height="36" fill="#fff" stroke="#0f172a"/>
+    <text x="440" y="115" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace">eval a</text>
+    <line x1="480" y1="110" x2="530" y2="110" stroke="#0f172a" stroke-width="1.4" marker-end="url(#b1)"/>
+    <polygon points="530,90 610,110 530,130" fill="#fff" stroke="#0f172a"/>
+    <text x="558" y="113" font-size="11" fill="#0f172a">truthy?</text>
+    <line x1="530" y1="130" x2="530" y2="170" stroke="#0f172a" stroke-width="1.4" marker-end="url(#b1)"/>
+    <text x="540" y="160" font-size="10" font-style="italic" fill="#475569">no</text>
+    <text x="400" y="187" font-size="12" font-family="JetBrains Mono, monospace" fill="#306998">eval b → b</text>
+    <line x1="610" y1="110" x2="650" y2="110" stroke="#0f172a" stroke-width="1.4" marker-end="url(#b1)"/>
+    <text x="630" y="103" text-anchor="middle" font-size="10" font-style="italic" fill="#475569">yes</text>
+    <text x="654" y="113" text-anchor="end" font-size="12" font-family="JetBrains Mono, monospace" fill="#306998">return a</text>
+    <text x="530" y="215" text-anchor="middle" font-size="10.5" fill="#475569" font-style="italic">returns the first truthy, else the last</text>
+  </svg>
+  <figcaption><strong>Figure 6.2.</strong> The two short-circuit operators, drawn as decision trees. The labels <code>a</code> and <code>b</code> are the operands themselves, not booleans derived from them, which is why the operators can <em>return</em> them.</figcaption>
+</figure>
+
+<div class="example">
+  <div class="example-head">Example 6.2<span class="title">A peek at the bytecode</span></div>
+  <div class="example-body">
+    <p>The short-circuit is not a runtime decision; the compiler emits a conditional jump that skips the second operand entirely.</p>
+<pre data-lang="python"><code><span class="tok-kw">import</span> dis
+<span class="tok-kw">def</span> <span class="tok-fn">f</span>(a, b): <span class="tok-kw">return</span> a <span class="tok-kw">and</span> b
+dis.dis(f)</code></pre>
+<pre class="output"><code>  1   RESUME            0
+      LOAD_FAST         a
+      COPY              1
+      POP_JUMP_IF_FALSE to RETURN_VALUE
+      POP_TOP
+      LOAD_FAST         b
+      RETURN_VALUE</code></pre>
+    <p>Read it: load <code>a</code>, keep a copy on the stack, jump straight to <code>RETURN_VALUE</code> if it is falsy (skipping <code>b</code> entirely), otherwise drop the copy and load <code>b</code> in its place. The compiler is doing the short-circuit; the interpreter never sees a choice.</p>
+  </div>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Logical Operators</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/reference/expressions.html#boolean-operations" target="_blank" rel="noopener">Boolean operations</a><span class="source">the precise short-circuit rules</span></li>
+    <li><a href="https://stackoverflow.com/questions/19503600/when-to-use-and-or-vs-vs-and-or" target="_blank" rel="noopener">When to use <code>and</code>/<code>or</code> as default selectors</a><span class="source">a discussion of the idiom</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 6.4 ===================== -->
+<h2 id="ch6-4"><span class="num">6.4</span>Truthiness, Revisited</h2>
+
+<p>Chapter 3.9 introduced the idea that every Python value can stand in for a boolean. This chapter is the right place to look at it again, because the rule shapes most of the conditions you will write. When Python tests a value for truth, it calls <code>__bool__()</code> on the value; if that is not defined, it falls back to <code>__len__()</code>, treating zero length as false; if neither is defined, the value is truthy. The set of values that come out falsy is small and worth memorising:</p>
+
+<ul>
+  <li><code>False</code> and <code>None</code></li>
+  <li><code>0</code>, <code>0.0</code>, <code>0j</code>, <code>Decimal(0)</code>, <code>Fraction(0)</code></li>
+  <li><code>""</code> (the empty string)</li>
+  <li><code>[]</code>, <code>()</code>, <code>{}</code>, <code>set()</code>, <code>frozenset()</code> (empty containers)</li>
+  <li><code>range(0)</code> and any other empty sequence</li>
+</ul>
+
+<p>Everything else is truthy. This rule is what makes <code>if names:</code> a complete way to say "if the list is not empty", and why <code>while line := file.readline():</code> works as the loop's natural termination. It is also where some of the most pernicious silent bugs live, because <em>truthiness asks about emptiness, not meaning</em>. The string <code>"False"</code> is a non-empty string, so it is truthy; a configuration switch read from a file as text needs an explicit comparison, not a truth test.</p>
+
+<div class="warning">
+  <span class="label">A silent bug</span>
+  <p>A program reads a setting as text and uses <code>if user_setting:</code> to decide whether it is on. The user writes <code>False</code> in the config. The string <code>"False"</code> is non-empty, so the branch runs and the setting is treated as <em>on</em>, the opposite of what was meant. Truth tests ask "is there anything here?", not "is this thing meaningful?". When you mean the second, compare explicitly: <code>if user_setting.lower() == "true":</code>.</p>
+</div>
+
+<div class="example">
+  <div class="example-head">Example 6.3<span class="title">A class that decides its own truth</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-kw">class</span> <span class="tok-cls">Cart</span>:
+    <span class="tok-kw">def</span> <span class="tok-fn">__init__</span>(self):
+        self.items = []
+    <span class="tok-kw">def</span> <span class="tok-fn">__bool__</span>(self):
+        <span class="tok-kw">return</span> <span class="tok-fn">len</span>(self.items) &gt; <span class="tok-num">0</span>
+
+cart = Cart()
+<span class="tok-kw">if</span> <span class="tok-kw">not</span> cart:
+    <span class="tok-fn">print</span>(<span class="tok-str">"Cart is empty"</span>)    <span class="tok-com"># this runs</span>
+cart.items.append(<span class="tok-str">"apple"</span>)
+<span class="tok-kw">if</span> cart:
+    <span class="tok-fn">print</span>(<span class="tok-str">"Cart has items"</span>)   <span class="tok-com"># this runs</span></code></pre>
+<pre class="output"><code>Cart is empty
+Cart has items</code></pre>
+    <p>By defining <code>__bool__</code>, a class participates in the same <code>if</code> grammar as the built-in containers. If we had defined <code>__len__</code> instead, the effect would be identical, because Python falls back to length when no <code>__bool__</code> exists.</p>
+  </div>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Truthiness</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/library/stdtypes.html#truth-value-testing" target="_blank" rel="noopener">Truth value testing</a><span class="source">the canonical list of falsy values</span></li>
+    <li><a href="https://docs.python.org/3/reference/datamodel.html#object.__bool__" target="_blank" rel="noopener"><code>__bool__</code> and the length fallback</a><span class="source">how the protocol works</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 6.5 ===================== -->
+<h2 id="ch6-5"><span class="num">6.5</span>The Conditional Expression</h2>
+
+<p>Python has one in-line form of <code>if</code>, called the <em>conditional expression</em>, that picks between two values:</p>
+
+<pre data-lang="python"><code>status = <span class="tok-str">"adult"</span> <span class="tok-kw">if</span> age &gt;= <span class="tok-num">18</span> <span class="tok-kw">else</span> <span class="tok-str">"minor"</span></code></pre>
+
+<p>The shape is <code>X if C else Y</code>. Python evaluates the condition <code>C</code> first; if true, the whole expression yields <code>X</code>, otherwise <code>Y</code>. Like <code>and</code> and <code>or</code>, only one of the two value-expressions is evaluated, so the unused side cannot raise an error. The order is sometimes surprising on first reading: the value comes before the condition, not after. This is deliberate; it reads more naturally for the common case of "this value, when this is so, otherwise this other one".</p>
+
+<p>Use it sparingly. The form is a small joy when it expresses a binary choice on one line. Nest it, or stretch it across two lines, and it becomes harder to read than the ordinary <code>if</code> block it tried to replace.</p>
+
+<div class="note">
+  <span class="label">Style</span>
+  <p>If the entire expression does not fit comfortably on one line, write the ordinary block instead. Two levels of nested conditional expressions (<code>a if c1 else b if c2 else d</code>) are legal but discouraged; the linear ordering does not match how people parse English, and the reader has to mentally re-bracket them.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Conditional Expressions</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0308/" target="_blank" rel="noopener">PEP 308: Conditional Expressions</a><span class="source">why the unusual order</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 6.6 ===================== -->
+<h2 id="ch6-6"><span class="num">6.6</span>Structural Pattern Matching: <code>match</code></h2>
+
+<p>Released with Python 3.10 in October 2021, the <code>match</code> statement is the language's newest piece of control flow, and one of its most powerful. Pattern matching is not the same thing as a <code>switch</code> statement from C or Java, although a <code>switch</code> is roughly the simplest thing you can do with it. The full feature is closer to the destructuring of Haskell, Scala, or Rust: a <code>match</code> case is not just a value to compare against, it is a <em>shape</em> to compare against, and successfully matching a shape binds names to the parts.</p>
+
+<p>The minimum example looks like a switch:</p>
+
+<pre data-lang="python"><code><span class="tok-kw">def</span> <span class="tok-fn">classify</span>(status):
+    <span class="tok-kw">match</span> status:
+        <span class="tok-kw">case</span> <span class="tok-num">200</span>:
+            <span class="tok-kw">return</span> <span class="tok-str">"OK"</span>
+        <span class="tok-kw">case</span> <span class="tok-num">301</span> | <span class="tok-num">302</span>:
+            <span class="tok-kw">return</span> <span class="tok-str">"redirect"</span>
+        <span class="tok-kw">case</span> <span class="tok-num">404</span>:
+            <span class="tok-kw">return</span> <span class="tok-str">"not found"</span>
+        <span class="tok-kw">case</span> _:
+            <span class="tok-kw">return</span> <span class="tok-str">"unknown"</span></code></pre>
+
+<p>The interesting part begins when the patterns describe shape:</p>
+
+<div class="example">
+  <div class="example-head">Example 6.4<span class="title">Destructuring with <code>match</code></span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-kw">def</span> <span class="tok-fn">describe</span>(point):
+    <span class="tok-kw">match</span> point:
+        <span class="tok-kw">case</span> (<span class="tok-num">0</span>, <span class="tok-num">0</span>):
+            <span class="tok-kw">return</span> <span class="tok-str">"origin"</span>
+        <span class="tok-kw">case</span> (<span class="tok-num">0</span>, y):                       <span class="tok-com"># captures the second component as y</span>
+            <span class="tok-kw">return</span> <span class="tok-fn">f</span><span class="tok-str">"on the y-axis at {y}"</span>
+        <span class="tok-kw">case</span> (x, <span class="tok-num">0</span>):
+            <span class="tok-kw">return</span> <span class="tok-fn">f</span><span class="tok-str">"on the x-axis at {x}"</span>
+        <span class="tok-kw">case</span> (x, y) <span class="tok-kw">if</span> x == y:           <span class="tok-com"># a guard: extra condition</span>
+            <span class="tok-kw">return</span> <span class="tok-fn">f</span><span class="tok-str">"diagonal at {x}"</span>
+        <span class="tok-kw">case</span> (x, y):                       <span class="tok-com"># anything else, with both components named</span>
+            <span class="tok-kw">return</span> <span class="tok-fn">f</span><span class="tok-str">"point ({x}, {y})"</span>
+        <span class="tok-kw">case</span> _:
+            <span class="tok-kw">return</span> <span class="tok-str">"not a point"</span>
+
+<span class="tok-fn">print</span>(describe((<span class="tok-num">0</span>, <span class="tok-num">5</span>)))   <span class="tok-com"># on the y-axis at 5</span>
+<span class="tok-fn">print</span>(describe((<span class="tok-num">3</span>, <span class="tok-num">3</span>)))   <span class="tok-com"># diagonal at 3</span>
+<span class="tok-fn">print</span>(describe((<span class="tok-num">7</span>, <span class="tok-num">2</span>)))   <span class="tok-com"># point (7, 2)</span></code></pre>
+    <p>Inside a <code>case</code>, a bare name (<code>x</code>, <code>y</code>) is a <em>capture pattern</em>: it matches anything and binds the matched value to that name. A literal (<code>0</code>) matches only equality. A guard, the <code>if</code> clause, adds an extra condition that the pattern alone cannot express. And the leading underscore is the <em>wildcard</em>, matching anything without binding a name.</p>
+  </div>
+</div>
+
+<p>The same patterns work for lists, dictionaries, and instances of your own classes. A dictionary pattern <code>{"name": n, "age": a}</code> succeeds when the subject is a mapping with at least those keys, binding their values. A class pattern <code>Point(x=0, y=y)</code> succeeds when the subject is a <code>Point</code> instance with <code>x</code> equal to zero, binding the <code>y</code> attribute. The feature is large enough that PEP 636, the official tutorial, is the best place to learn it properly. Used well, it replaces long chains of <code>isinstance</code> tests with code that reads as the data does.</p>
+
+<div class="warning">
+  <span class="label">One trap</span>
+  <p>A name that is just a bare lowercase identifier always means <em>capture</em>, not <em>compare</em>. To match against the value of a constant, the constant has to be <em>dotted</em>: <code>case Color.RED:</code>, not <code>case RED:</code>, the latter would simply rebind <code>RED</code> to whatever the subject was. The rule is documented in PEP 634 and surprises everyone exactly once.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Pattern Matching</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0636/" target="_blank" rel="noopener">PEP 636: Structural Pattern Matching Tutorial</a><span class="source">the most readable introduction</span></li>
+    <li><a href="https://peps.python.org/pep-0634/" target="_blank" rel="noopener">PEP 634: Specification</a><span class="source">the formal grammar</span></li>
+    <li><a href="https://peps.python.org/pep-0635/" target="_blank" rel="noopener">PEP 635: Motivation and Rationale</a><span class="source">why it is structural, not a switch</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 6.7 ===================== -->
+<h2 id="ch6-7"><span class="num">6.7</span>De Morgan's Laws and the Readable Negative</h2>
+
+<figure class="photo" style="float:right;width:210px;margin:0 0 16px 24px;">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/c/cf/Augustus_De_Morgan.jpg" alt="Portrait of Augustus De Morgan" loading="lazy">
+  <figcaption><strong>Figure 6.3.</strong> Augustus De Morgan (1806–1871), Boole's contemporary and friend, who codified the duality between conjunction and disjunction now named for him. <a href="https://en.wikipedia.org/wiki/Augustus_De_Morgan" target="_blank" rel="noopener">Augustus De Morgan</a></figcaption>
+</figure>
+
+<p>The last topic in this short chapter is not a feature of Python but a fact of logic, valuable because it lets you rewrite cluttered conditions into clean ones. Augustus De Morgan, who corresponded with Boole and shared his interests, observed in the 1840s that negation distributes over <code>and</code> and <code>or</code> by swapping them. In Python's notation:</p>
+
+<pre data-lang="python"><code><span class="tok-kw">not</span> (a <span class="tok-kw">and</span> b)   <span class="tok-com"># is the same as</span>   (<span class="tok-kw">not</span> a) <span class="tok-kw">or</span>  (<span class="tok-kw">not</span> b)
+<span class="tok-kw">not</span> (a <span class="tok-kw">or</span>  b)   <span class="tok-com"># is the same as</span>   (<span class="tok-kw">not</span> a) <span class="tok-kw">and</span> (<span class="tok-kw">not</span> b)</code></pre>
+
+<p>The rule rarely matters in arithmetic; it matters in code, because negated conditions are harder to read than positive ones, and a needlessly negated <em>combination</em> of conditions is harder still. When you find yourself writing <code>if not (x &gt; 5 and x &lt; 10):</code>, De Morgan tells you it is the same as <code>if x &lt;= 5 or x &gt;= 10:</code>, which says what it means.</p>
+
+<div class="example">
+  <div class="example-head">Example 6.5<span class="title">A condition rewritten three times</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-com"># Original, awkward: a double negative</span>
+<span class="tok-kw">if</span> <span class="tok-kw">not</span> (user.is_admin <span class="tok-kw">or</span> user.has_token):
+    refuse()
+
+<span class="tok-com"># De Morgan: distribute the not over the or, flipping it to and</span>
+<span class="tok-kw">if</span> <span class="tok-kw">not</span> user.is_admin <span class="tok-kw">and</span> <span class="tok-kw">not</span> user.has_token:
+    refuse()
+
+<span class="tok-com"># Better still: flip the test and the action together</span>
+<span class="tok-kw">if</span> user.is_admin <span class="tok-kw">or</span> user.has_token:
+    allow()
+<span class="tok-kw">else</span>:
+    refuse()</code></pre>
+    <p>All three forms are logically identical. The third reads in the positive, with the negation pushed onto a single keyword (<code>else</code>) rather than smeared across several. This is the kind of rewriting that earns its place in code review.</p>
+  </div>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: De Morgan and Beyond</div>
+  <ul>
+    <li><a href="https://en.wikipedia.org/wiki/De_Morgan%27s_laws" target="_blank" rel="noopener">De Morgan's laws</a><span class="source">the broader mathematical context</span></li>
+    <li><a href="https://refactoring.guru/replace-nested-conditional-with-guard-clauses" target="_blank" rel="noopener">Replace nested conditional with guard clauses</a><span class="source">a refactoring that benefits from De Morgan</span></li>
+  </ul>
+</div>
+
+<hr class="section-rule"/>
+
+<!-- ===================== EXERCISES ===================== -->
+<h2 id="ch6-ex">Exercises</h2>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.1<span class="title">Counting with booleans</span></div>
+  <p>Given <code>scores = [82, 45, 91, 67, 30, 99, 58]</code>, write a single expression using <code>sum</code> that counts how many scores are at least 60. Explain why this works in terms of the <code>bool</code>/<code>int</code> relationship.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.2<span class="title">A chained comparison</span></div>
+  <p>Rewrite each of these into a single chained comparison, then explain what each one is testing: (a) <code>a &gt;= 1 and a &lt;= 100</code>; (b) <code>a &gt; b and b &gt; c</code>; (c) <code>x == y and y == z</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.3<span class="title">Predict the operand</span></div>
+  <p>Without running them, predict the value <em>and the type</em> of each expression: (a) <code>0 or "fallback"</code>; (b) <code>"Ada" and "Lovelace"</code>; (c) <code>[] or [1, 2]</code>; (d) <code>not "Ada"</code>; (e) <code>None or 0 or False or "default"</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.4<span class="title">A safe length check</span></div>
+  <p>Write a single condition that is true if <code>x</code> is a non-empty string. Why does relying on <code>len(x)</code> alone risk an error here, and how does <code>and</code>'s short-circuit help?</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.5<span class="title">The "False" trap</span></div>
+  <p>Explain in one sentence why <code>if "False":</code> runs its body, and write the correct test for a configuration string whose value should be treated as "off" when it equals <code>"false"</code> (in any case).</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.6<span class="title">Pattern matching</span></div>
+  <p>Write a function <code>describe(shape)</code> that uses <code>match</code> to recognise four kinds of value: a 2-element tuple it calls a "point", a 3-element tuple it calls a "3D point", a dict with a <code>"name"</code> key it greets by name, and anything else it labels <code>"unknown"</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.7<span class="title">De Morgan rewrite</span></div>
+  <p>Rewrite each into a positive, easier-to-read form: (a) <code>not (x &gt; 0 and x &lt; 10)</code>; (b) <code>not (user.is_admin or user.is_owner)</code>; (c) <code>not (a == b)</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 6.8<span class="title">A history question</span></div>
+  <p>Python did not always have a <code>bool</code> type. Until Python 2.3 (released in 2003), the values 0 and 1 were used in its place. Read the abstract of PEP 285 in three minutes and write one paragraph in your own words explaining why a separate <code>bool</code> type was added <em>and</em> why it was made a subclass of <code>int</code>.</p>
+</div>
+
+<!-- ===================== SOLUTIONS ===================== -->
+<div class="solutions" id="ch6-sol">
+  <h2>Solutions to Chapter 6 Exercises</h2>
+
+  <div class="solution">
+    <h3>Solution 6.1: Counting with booleans</h3>
+<pre data-lang="python"><code>scores = [<span class="tok-num">82</span>, <span class="tok-num">45</span>, <span class="tok-num">91</span>, <span class="tok-num">67</span>, <span class="tok-num">30</span>, <span class="tok-num">99</span>, <span class="tok-num">58</span>]
+<span class="tok-fn">sum</span>(s &gt;= <span class="tok-num">60</span> <span class="tok-kw">for</span> s <span class="tok-kw">in</span> scores)   <span class="tok-com"># 4</span></code></pre>
+    <p>Each comparison <code>s &gt;= 60</code> produces a <code>True</code> or <code>False</code>. Because <code>bool</code> is a subclass of <code>int</code>, those values are exactly <code>1</code> and <code>0</code> when used in arithmetic, so summing the generator counts the number of true comparisons. The values 82, 91, 67, and 99 pass, giving 4.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 6.2: Chained comparison</h3>
+    <p>(a) <code>1 &lt;= a &lt;= 100</code>, "a is between 1 and 100 inclusive". (b) <code>a &gt; b &gt; c</code>, "the three are in strictly decreasing order". (c) <code>x == y == z</code>, "all three are equal". In each case Python evaluates the middle expression once and AND-s the adjacent comparisons, short-circuiting if any fails.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 6.3: Predict the operand</h3>
+    <p>(a) <code>'fallback'</code>, a <code>str</code>: 0 is falsy, so <code>or</code> returns the second operand. (b) <code>'Lovelace'</code>, a <code>str</code>: both are truthy, so <code>and</code> returns the last. (c) <code>[1, 2]</code>, a <code>list</code>: <code>[]</code> is falsy. (d) <code>False</code>, a <code>bool</code>: <code>not</code> always returns a boolean, never an operand. (e) <code>'default'</code>, a <code>str</code>: <code>None</code>, <code>0</code>, and <code>False</code> are all falsy, so <code>or</code> walks past them and lands on the first truthy value.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 6.4: A safe length check</h3>
+<pre data-lang="python"><code><span class="tok-fn">isinstance</span>(x, <span class="tok-fn">str</span>) <span class="tok-kw">and</span> <span class="tok-fn">len</span>(x) &gt; <span class="tok-num">0</span>
+<span class="tok-com"># or simply: isinstance(x, str) and x       (truthiness gives len > 0 for free)</span></code></pre>
+    <p>Calling <code>len</code> on something that has no length (such as <code>None</code> or an integer) raises <code>TypeError</code>. The <code>and</code> short-circuits: if the first operand is false, the second is never evaluated, so the type check protects the length check from blowing up on the wrong sort of input.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 6.5: The "False" trap</h3>
+    <p>The literal <code>"False"</code> is a non-empty string, and any non-empty string is truthy, so <code>if "False":</code> runs its body. The correct test reads the value explicitly: <code>if setting.lower() == "false":</code> or, more robustly, a small parser that accepts <code>"false"</code>, <code>"0"</code>, and <code>"off"</code>. Truthiness is a question about emptiness, never about content.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 6.6: Pattern matching</h3>
+<pre data-lang="python"><code><span class="tok-kw">def</span> <span class="tok-fn">describe</span>(shape):
+    <span class="tok-kw">match</span> shape:
+        <span class="tok-kw">case</span> (x, y):
+            <span class="tok-kw">return</span> <span class="tok-fn">f</span><span class="tok-str">"point ({x}, {y})"</span>
+        <span class="tok-kw">case</span> (x, y, z):
+            <span class="tok-kw">return</span> <span class="tok-fn">f</span><span class="tok-str">"3D point ({x}, {y}, {z})"</span>
+        <span class="tok-kw">case</span> {<span class="tok-str">"name"</span>: name}:
+            <span class="tok-kw">return</span> <span class="tok-fn">f</span><span class="tok-str">"hello, {name}"</span>
+        <span class="tok-kw">case</span> _:
+            <span class="tok-kw">return</span> <span class="tok-str">"unknown"</span></code></pre>
+    <p>The tuple patterns match by length; the mapping pattern matches any dict that has at least a <code>"name"</code> key and binds its value; the wildcard catches everything else. Note that the mapping pattern would still match if extra keys were present, which is usually what you want.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 6.7: De Morgan rewrite</h3>
+    <p>(a) <code>x &lt;= 0 or x &gt;= 10</code>, "x is outside the open interval (0, 10)". (b) <code>not user.is_admin and not user.is_owner</code>, or even better the positive form <code>user.is_admin or user.is_owner</code> with the branches swapped. (c) <code>a != b</code>. The general rule: a not over an <em>and</em> becomes an or of the nots; a not over an or becomes an and of the nots; and the cleanest result usually swaps the if and else rather than carrying the negation along.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 6.8: A history question</h3>
+    <p>PEP 285, by Guido van Rossum in 2002, argued that Python should have a real boolean type to make the language's intent clearer and to give the values <code>True</code> and <code>False</code> proper names that <code>repr</code> could print. But Python had been using <code>0</code> and <code>1</code> for twelve years; any code that did so had to keep working. Making <code>bool</code> a subclass of <code>int</code> resolved the tension at a stroke: every <code>True</code> still equals <code>1</code> in arithmetic, every old test that summed truth values still works, but the new type prints distinctively, can be checked with <code>isinstance</code>, and signals to a reader that the value is logical rather than numeric. It is one of the cleaner compromises in the language's history.</p>
+  </div>
+</div>
+
+</div><!-- /chapter-inner -->
+
+<div class="page-footer">
+  <span>First Edition · 2026</span>
+  <span class="pn">Pages 186–203</span>
+  <span>Chapter 6 of 22</span>
+</div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- ================== END OF CHAPTER 6: MORE TO COME =================== -->
 <!-- ===================================================================== -->
 
 </main>
