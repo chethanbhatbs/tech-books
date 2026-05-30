@@ -594,6 +594,20 @@ hr.section-rule::before{content:"§ § §"}
     <a href="#ch8-ex" class="section">Exercises</a>
     <a href="#ch8-sol" class="section">Solutions</a>
   </nav>
+
+  <h4>Part III (cont.)</h4>
+  <nav>
+    <a href="#ch9"><strong>9. Tuples &amp; Named Tuples</strong></a>
+    <a href="#ch9-1" class="section">9.1 The Tuple, Properly</a>
+    <a href="#ch9-2" class="section">9.2 The Comma Makes It</a>
+    <a href="#ch9-3" class="section">9.3 Packing &amp; Unpacking</a>
+    <a href="#ch9-4" class="section">9.4 Records, Not Lists</a>
+    <a href="#ch9-5" class="section">9.5 Hashable Compound Keys</a>
+    <a href="#ch9-6" class="section">9.6 Multiple Return Values</a>
+    <a href="#ch9-7" class="section">9.7 Named Tuples</a>
+    <a href="#ch9-ex" class="section">Exercises</a>
+    <a href="#ch9-sol" class="section">Solutions</a>
+  </nav>
 </aside>
 
 <!-- ================= MAIN ================= -->
@@ -5162,7 +5176,394 @@ grid[<span class="tok-num">0</span>][<span class="tok-num">0</span>] = <span cla
 </section>
 
 <!-- ===================================================================== -->
-<!-- ================== END OF CHAPTER 8: MORE TO COME =================== -->
+<!-- ================== CHAPTER 9: TUPLES & NAMED TUPLES ================= -->
+<!-- ===================================================================== -->
+<section class="chapter" id="ch9">
+
+<div class="page-header">
+  <span class="title-left">Python · A Complete Course</span>
+  <span class="title-right">Chapter 9 · Tuples &amp; Named Tuples</span>
+</div>
+
+<div class="chapter-inner">
+
+<div class="chapter-header">
+  <div class="chapter-eyebrow">Chapter 9 · Part III · The Containers</div>
+  <h1>Tuples &amp; Named Tuples</h1>
+  <p class="deck">Tuples are not frozen lists; they are immutable records. Understanding that one distinction reshapes how you choose between the two, why a tuple can be a dictionary key, and why <code>(5)</code> is not a tuple but <code>(5,)</code> is.</p>
+</div>
+
+<div class="epigraph">
+  Explicit is better than implicit.
+  <cite>— Tim Peters, the Zen of Python (PEP 20)</cite>
+</div>
+
+<p class="opening">The most useful sentence anyone ever wrote about the difference between lists and tuples is this: a <em>list</em> is a sequence of homogeneous things you intend to walk over, while a <em>tuple</em> is a record of heterogeneous fields you intend to address by position. A list of scores is a list, a row from a database is a tuple. The two types have similar surface syntax, similar indexing rules, and very different intent, and the experienced Python programmer chooses between them by intent, not by which one is "frozen". This chapter is about that distinction, the small set of language facts that make tuples work, and the named-tuple feature that gives positional records back their meaning.</p>
+
+<!-- ===================== 9.1 ===================== -->
+<h2 id="ch9-1"><span class="num">9.1</span>The Tuple, Properly Understood</h2>
+
+<p>A <strong>tuple</strong> is an ordered, immutable sequence of values, conventionally written in parentheses: <code>(1, 2, 3)</code>. It looks like a list with rounder brackets, and on the surface it behaves like one: you index it, slice it, iterate over it, and ask its length the same way. The shared surface tempts beginners into thinking of a tuple as "a list you can't change", which works as a first approximation and slowly accumulates confusion afterwards.</p>
+
+<p>The deeper way to read the type is one Guido van Rossum has stated repeatedly: <strong>tuples are for records, lists are for sequences</strong>. A list usually holds many things of the <em>same</em> kind, where every element plays the same role and only its position in the order matters. A tuple usually holds a few things of <em>different</em> kinds, where each position has its own meaning. <code>[12, 7, 19, 4]</code> is a list of temperatures; <code>("Ada", 28, "London")</code> is a tuple that is one person's record. The fact that a tuple cannot be modified is a consequence of this intent rather than its purpose: a record's shape is fixed, so its type is too.</p>
+
+<div class="definition">
+  <div class="term">Tuple</div>
+  <p>An ordered, immutable sequence of values, type <code>tuple</code>. Written with parentheses (which are optional) and separated by commas (which are not). Tuples are hashable when every element is hashable, which lets them serve as dictionary keys and set members. Use them for records of fixed shape and for "multiple values returned together".</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Tuples vs Lists</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/tutorial/datastructures.html#tuples-and-sequences" target="_blank" rel="noopener">Tuples and Sequences</a><span class="source">the Python tutorial section</span></li>
+    <li><a href="https://stackoverflow.com/questions/626759/whats-the-difference-between-lists-and-tuples" target="_blank" rel="noopener">"What's the difference between lists and tuples?"</a><span class="source">the canonical Stack Overflow answer, with Guido's record-vs-sequence quote</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 9.2 ===================== -->
+<h2 id="ch9-2"><span class="num">9.2</span>The Comma Makes It a Tuple, Not the Parens</h2>
+
+<p>A small piece of syntax catches every newcomer once, and it is worth understanding now so you never trip on it. <em>The parentheses do not make a tuple. The commas do.</em> Parentheses serve their usual grouping role around an expression; when they enclose a comma-separated list of values, the commas are what mark the value as a tuple.</p>
+
+<pre data-lang="python"><code>t = <span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>              <span class="tok-com"># a tuple, no parens at all</span>
+t = (<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>)            <span class="tok-com"># a tuple, parens added for clarity</span>
+
+p = (<span class="tok-num">5</span>)                  <span class="tok-com"># NOT a tuple, just the number 5 in parentheses</span>
+<span class="tok-fn">type</span>(p)                  <span class="tok-com"># &lt;class 'int'&gt;</span>
+
+p = (<span class="tok-num">5</span>,)                 <span class="tok-com"># a one-element tuple, the trailing comma makes it</span>
+<span class="tok-fn">type</span>(p)                  <span class="tok-com"># &lt;class 'tuple'&gt;</span>
+
+empty = ()                <span class="tok-com"># the one exception: empty tuple needs parens</span>
+empty = <span class="tok-fn">tuple</span>()           <span class="tok-com"># or call the constructor</span></code></pre>
+
+<p>The empty tuple is the one case where parentheses cannot be omitted, because a comma with nothing on either side has no other meaning. Everywhere else, you can drop the parens; whether you do is a matter of style. Inside a function call, where the parentheses are already taken by the call itself, the trailing-comma rule is what disambiguates a one-element tuple from a parenthesised argument.</p>
+
+<div class="warning">
+  <span class="label">The classic slip</span>
+  <p>Writing <code>f((5))</code> when you meant <code>f((5,))</code> passes an <code>int</code>, not a one-element tuple. The same trap shows up in <code>return</code> statements: <code>return (5)</code> returns <code>5</code>; <code>return (5,)</code> returns a one-tuple. If your function's "tuple of one thing" is being treated as the thing itself, look for a missing trailing comma.</p>
+</div>
+
+<!-- ===================== 9.3 ===================== -->
+<h2 id="ch9-3"><span class="num">9.3</span>Packing and Unpacking</h2>
+
+<p>When several values appear on the right of an <code>=</code> separated by commas, Python <em>packs</em> them into a tuple. When several names appear on the left, Python <em>unpacks</em> a tuple into them. These two operations are the same machinery seen from opposite ends, and together they power some of the most idiomatic Python you will write.</p>
+
+<pre data-lang="python"><code><span class="tok-com"># Packing: the right side becomes a tuple, which is bound to t.</span>
+t = <span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>
+<span class="tok-fn">type</span>(t), <span class="tok-fn">len</span>(t)        <span class="tok-com"># (&lt;class 'tuple'&gt;, 3)
+
+# Unpacking: each name on the left gets one item from the right.
+a, b, c = (<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>)
+<span class="tok-fn">print</span>(a, b, c)            <span class="tok-com"># 1 2 3</span>
+
+<span class="tok-com"># The swap is just simultaneous packing and unpacking:</span>
+a, b = b, a               <span class="tok-com"># the right side packs to (b, a), the left unpacks it</span></code></pre>
+
+<p>The number of names on the left must match the number of values on the right, or Python raises <code>ValueError</code> with a precise count. To accept "the rest", whatever its size, use a starred name. The starred name collects everything not claimed by the other names, and the rule is that <em>at most one star is allowed</em>, but its position is free.</p>
+
+<div class="example">
+  <div class="example-head">Example 9.1<span class="title">Starred unpacking, in three positions</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>first, *rest = (<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>, <span class="tok-num">5</span>)
+<span class="tok-fn">print</span>(first, rest)        <span class="tok-com"># 1 [2, 3, 4, 5]</span>
+
+*head, last = (<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>, <span class="tok-num">5</span>)
+<span class="tok-fn">print</span>(head, last)         <span class="tok-com"># [1, 2, 3, 4] 5</span>
+
+first, *middle, last = (<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>, <span class="tok-num">5</span>)
+<span class="tok-fn">print</span>(first, middle, last)  <span class="tok-com"># 1 [2, 3, 4] 5</span></code></pre>
+    <p>Two facts to notice. First, the starred name binds a <strong>list</strong>, not a tuple, even though the source was a tuple; the language chose <code>list</code> here because the result is the variable-length, "the rest" part of the destructure. Second, you can place the star anywhere in the target, and Python figures out which items belong to it by counting from both ends. The unpacking is greedy but unambiguous.</p>
+  </div>
+</div>
+
+<p>Unpacking works on any iterable, not just tuples; <code>a, b, c = "abc"</code> unpacks a string into three names. This generalisation, called <em>iterable unpacking</em>, is why <code>for x, y in pairs:</code> and <code>for i, name in enumerate(names):</code> read so cleanly: each iteration packs one element of the iterable, then unpacks it into the loop names.</p>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Unpacking</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-3132/" target="_blank" rel="noopener">PEP 3132: Extended Iterable Unpacking</a><span class="source">the starred-name proposal from 2007</span></li>
+    <li><a href="https://peps.python.org/pep-0448/" target="_blank" rel="noopener">PEP 448: Additional Unpacking Generalizations</a><span class="source">where <code>[*xs, *ys]</code> and <code>{**a, **b}</code> came from</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 9.4 ===================== -->
+<h2 id="ch9-4"><span class="num">9.4</span>Records, Not Lists: When to Reach for a Tuple</h2>
+
+<p>The clearest way to know when a tuple is the right type is to ask one question: <em>does each position have its own meaning?</em> If yes, you are looking at a record, and a tuple is correct. If every position plays the same role, you have a sequence, and a list is correct. Three concrete cases sharpen the distinction.</p>
+
+<table>
+  <tr><th>Data</th><th>Right type</th><th>Why</th></tr>
+  <tr><td>A geographic coordinate <code>(51.5, -0.1)</code></td><td>tuple</td><td>position 0 is latitude, position 1 is longitude, different fields</td></tr>
+  <tr><td>The cities you visited on a trip</td><td>list</td><td>every element is "a city"; order is the only structure</td></tr>
+  <tr><td>An RGB colour <code>(255, 99, 71)</code></td><td>tuple</td><td>three positions with three meanings (R, G, B)</td></tr>
+  <tr><td>The pixels of one row of an image</td><td>list</td><td>thousands of homogeneous values</td></tr>
+  <tr><td>The return value <code>(name, age, city)</code></td><td>tuple</td><td>three different fields packed for one transport</td></tr>
+  <tr><td>A queue of pending jobs</td><td>list (or deque)</td><td>every element is "a job"; you push and pop</td></tr>
+</table>
+
+<p>One pragmatic consequence of choosing well: a tuple's immutability documents that a value's <em>shape</em> is fixed. A reader who sees <code>def location(): return (lat, lon)</code> can be confident that the result will always be a two-element record, while a reader who sees <code>def location(): return [lat, lon]</code> has no such guarantee, and any function the result is passed to could quietly extend it.</p>
+
+<div class="note">
+  <span class="label">A tuple is also faster and lighter</span>
+  <p>Because a tuple's length is known at creation and never changes, CPython can store it more compactly than a list (no over-allocation, no separate header for length-vs-capacity, and the items can live in the same memory block). The constant-factor difference rarely matters for individual values, but for code that creates millions of small records it adds up. The right reason to choose a tuple is still semantic; the performance is a side benefit.</p>
+</div>
+
+<!-- ===================== 9.5 ===================== -->
+<h2 id="ch9-5"><span class="num">9.5</span>Hashable: Compound Dictionary Keys</h2>
+
+<p>Chapter 3 introduced hashability and the rule that mutable objects (lists, dicts, sets) cannot be dictionary keys, while immutable ones (numbers, strings, tuples) can. Tuples are where this rule pays off, because a tuple of hashable items is itself hashable, and the resulting "compound key" lets a dictionary be indexed by structured data without inventing a wrapper.</p>
+
+<pre data-lang="python"><code>locations = {
+    (<span class="tok-num">51.5</span>, -<span class="tok-num">0.1</span>):  <span class="tok-str">"London"</span>,
+    (<span class="tok-num">35.7</span>, <span class="tok-num">139.7</span>): <span class="tok-str">"Tokyo"</span>,
+    (<span class="tok-num">40.7</span>, -<span class="tok-num">74.0</span>): <span class="tok-str">"New York"</span>,
+}
+locations[(<span class="tok-num">51.5</span>, -<span class="tok-num">0.1</span>)]    <span class="tok-com"># 'London'</span>
+
+<span class="tok-com"># A grid of pieces, keyed by (row, col):</span>
+board = {}
+board[(<span class="tok-num">0</span>, <span class="tok-num">0</span>)] = <span class="tok-str">"rook"</span>
+board[(<span class="tok-num">0</span>, <span class="tok-num">4</span>)] = <span class="tok-str">"king"</span>
+
+<span class="tok-com"># A list, attempted as a key, fails:</span>
+locations[[<span class="tok-num">51.5</span>, -<span class="tok-num">0.1</span>]]
+<span class="tok-com"># TypeError: unhashable type: 'list'</span></code></pre>
+
+<p>The reason a list cannot be a key, you will remember from Chapter 3.7, is the contract between hashing and equality: if a key's hash could change while it sat in the table, the table would lose track of where it had stored the entry. A list is mutable, so its hash is not allowed to exist at all; a tuple is immutable, so its hash is stable forever. The same rule lets tuples of hashable items be set members.</p>
+
+<div class="warning">
+  <span class="label">A tuple is hashable only if its elements are</span>
+  <p>A tuple containing a list is not hashable. The unhashability is contagious: any container that <em>contains</em> a non-hashable element is itself non-hashable, because computing the container's hash requires hashing each of its elements. If you find yourself wanting <code>(name, friends)</code> as a key where <code>friends</code> is a list, freeze the inner list into a tuple (or <code>frozenset</code> when order does not matter) first.</p>
+</div>
+
+<!-- ===================== 9.6 ===================== -->
+<h2 id="ch9-6"><span class="num">9.6</span>Multiple Return Values</h2>
+
+<p>A function in Python returns exactly one value, but that value can be a tuple, and the calling code can unpack the tuple back into separate names in the same statement. The combination of packing on the way out and unpacking on the way in makes "multiple return values" feel as if Python supported them natively.</p>
+
+<pre data-lang="python"><code><span class="tok-kw">def</span> <span class="tok-fn">min_max</span>(xs):
+    <span class="tok-kw">return</span> <span class="tok-fn">min</span>(xs), <span class="tok-fn">max</span>(xs)         <span class="tok-com"># packs into a tuple</span>
+
+lo, hi = min_max([<span class="tok-num">3</span>, <span class="tok-num">1</span>, <span class="tok-num">4</span>, <span class="tok-num">1</span>, <span class="tok-num">5</span>, <span class="tok-num">9</span>])  <span class="tok-com"># unpacks at the call site</span>
+<span class="tok-fn">print</span>(lo, hi)                          <span class="tok-com"># 1 9</span></code></pre>
+
+<p>The standard library uses this pattern throughout: <code>divmod(a, b)</code> returns <code>(quotient, remainder)</code>, <code>str.partition(sep)</code> returns <code>(before, sep, after)</code>, <code>os.path.split(p)</code> returns <code>(head, tail)</code>. When you write your own function and the answer naturally has two or three parts, returning them as a tuple and letting the caller unpack is more idiomatic than packing them into a list or building a small ad-hoc class.</p>
+
+<div class="example">
+  <div class="example-head">Example 9.2<span class="title">A function returns three things</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-kw">def</span> <span class="tok-fn">parse_email</span>(addr):
+    user, _, domain = addr.partition(<span class="tok-str">"@"</span>)
+    local, _, tag = user.partition(<span class="tok-str">"+"</span>)
+    <span class="tok-kw">return</span> local, tag, domain
+
+local, tag, domain = parse_email(<span class="tok-str">"ada+work@example.com"</span>)
+<span class="tok-fn">print</span>(local, tag, domain)   <span class="tok-com"># ada work example.com</span></code></pre>
+    <p>The function returns three values as a tuple; the caller takes the tuple apart in the same line. Notice that inside the function, <code>str.partition</code> itself returns a three-element tuple, which the local <code>user, _, domain</code> immediately unpacks. Tuples are the lingua franca of compound returns.</p>
+  </div>
+</div>
+
+<p>The convention of using <code>_</code> as a name for "I do not care about this value" is widely understood and respected by linters. It is, of course, still a real variable, but the name signals to a reader "ignore this".</p>
+
+<!-- ===================== 9.7 ===================== -->
+<h2 id="ch9-7"><span class="num">9.7</span>Named Tuples: When Position Needs a Name</h2>
+
+<p>The one limitation of using bare tuples for records becomes obvious the moment a record grows beyond two or three fields. <code>person[3]</code> is not self-explanatory; whoever reads it has to remember which position is which, or look up the convention. The standard library has, since Python 2.6, offered a fix called the <strong>named tuple</strong>: a tuple with names for its positions. It costs nothing at runtime and reads as well as it works.</p>
+
+<p>There are now two ways to declare one. The original is <code>collections.namedtuple</code>, a factory function. The modern one, since Python 3.5, is the class-based <code>typing.NamedTuple</code>, which adds type annotations and a familiar class syntax. Both produce the same kind of object.</p>
+
+<div class="example">
+  <div class="example-head">Example 9.3<span class="title">The two named-tuple syntaxes</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code><span class="tok-com"># Original: a factory call</span>
+<span class="tok-kw">from</span> collections <span class="tok-kw">import</span> namedtuple
+Point = namedtuple(<span class="tok-str">"Point"</span>, [<span class="tok-str">"x"</span>, <span class="tok-str">"y"</span>])
+
+p = Point(<span class="tok-num">3</span>, <span class="tok-num">4</span>)
+p.x, p.y               <span class="tok-com"># (3, 4), named access</span>
+p[<span class="tok-num">0</span>], p[<span class="tok-num">1</span>]           <span class="tok-com"># (3, 4), positional access still works</span>
+x, y = p               <span class="tok-com"># unpacking still works</span>
+
+<span class="tok-com"># Modern: a class with type annotations</span>
+<span class="tok-kw">from</span> typing <span class="tok-kw">import</span> NamedTuple
+
+<span class="tok-kw">class</span> <span class="tok-cls">Point</span>(NamedTuple):
+    x: <span class="tok-fn">float</span>
+    y: <span class="tok-fn">float</span>
+    <span class="tok-kw">def</span> <span class="tok-fn">distance_to_origin</span>(self):
+        <span class="tok-kw">return</span> (self.x ** <span class="tok-num">2</span> + self.y ** <span class="tok-num">2</span>) ** <span class="tok-num">0.5</span>
+
+p = Point(<span class="tok-num">3</span>, <span class="tok-num">4</span>)
+p.distance_to_origin()     <span class="tok-com"># 5.0</span></code></pre>
+    <p>The class-based form is the one to prefer in modern code. It documents types, allows methods, and reads like a small class. Behind the scenes both forms produce a subclass of <code>tuple</code>, which is why named tuples are still tuples in every sense: indexable, iterable, comparable, hashable when their fields are, and unpackable.</p>
+  </div>
+</div>
+
+<p>A handful of methods are added by the named-tuple machinery, all prefixed with an underscore to avoid colliding with field names. The three you will actually use:</p>
+
+<table>
+  <tr><th>Method</th><th>What it does</th></tr>
+  <tr><td><code>p._asdict()</code></td><td>convert to a regular <code>dict</code> with the field names as keys</td></tr>
+  <tr><td><code>p._replace(x=10)</code></td><td>return a new named tuple with one or more fields changed</td></tr>
+  <tr><td><code>Point._fields</code></td><td>the tuple of field names, useful for introspection</td></tr>
+</table>
+
+<p><code>_replace</code> is worth singling out, because it gives you a way to "update" an immutable record. Tuples cannot be modified, so the only way to get a new tuple with one field different is to create one; <code>_replace</code> does that, copying the other fields automatically.</p>
+
+<pre data-lang="python"><code>p = Point(<span class="tok-num">3</span>, <span class="tok-num">4</span>)
+q = p._replace(x=<span class="tok-num">10</span>)         <span class="tok-com"># Point(x=10, y=4), p is unchanged</span></code></pre>
+
+<div class="note">
+  <span class="label">Named tuple vs dataclass</span>
+  <p>If named tuples were not enough, Python 3.7 added <code>@dataclass</code> (PEP 557), which serves the same "data holder" role but with a mutable, regular-class body. The two are not redundant; they complement each other. Use a <strong>named tuple</strong> when the record is small, immutable, and frequently created or hashed (it is lighter and works as a dict key). Use a <strong>dataclass</strong> when the record has methods, will be mutated after creation, or has many fields that benefit from default values. We meet dataclasses properly in Chapter 19 (the modern-class chapter).</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Named Tuples</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/library/collections.html#collections.namedtuple" target="_blank" rel="noopener">collections.namedtuple</a><span class="source">the original factory form</span></li>
+    <li><a href="https://docs.python.org/3/library/typing.html#typing.NamedTuple" target="_blank" rel="noopener">typing.NamedTuple</a><span class="source">the modern class-based form</span></li>
+    <li><a href="https://peps.python.org/pep-0557/" target="_blank" rel="noopener">PEP 557: Data Classes</a><span class="source">the close cousin; see Chapter 19</span></li>
+  </ul>
+</div>
+
+<hr class="section-rule"/>
+
+<!-- ===================== EXERCISES ===================== -->
+<h2 id="ch9-ex">Exercises</h2>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.1<span class="title">The comma test</span></div>
+  <p>For each, predict the type and value: (a) <code>x = 1, 2, 3</code>; (b) <code>x = (1, 2, 3)</code>; (c) <code>x = (5)</code>; (d) <code>x = (5,)</code>; (e) <code>x = ()</code>; (f) <code>x = 5,</code>. Run them to check.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.2<span class="title">Unpack the line</span></div>
+  <p>Given the line <code>"Lovelace,Ada,1815,London"</code>, use <code>str.split</code> and a single starred-unpacking statement to bind <code>last</code>, <code>first</code>, and <code>rest</code> (a list of any remaining fields). Try the same with the star on the left, in the middle, and on the right; explain each.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.3<span class="title">Choose the type</span></div>
+  <p>For each, choose <code>list</code> or <code>tuple</code> and justify in one sentence: (a) the days a user logged in; (b) a date stored as year-month-day; (c) the cards in a deck; (d) the dimensions of a rectangle (width, height); (e) the items in a shopping cart; (f) an HTTP response stored as (status_code, headers, body).</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.4<span class="title">A compound dictionary key</span></div>
+  <p>Build a dictionary that maps <code>(row, col)</code> coordinates to chess pieces, populating it with a starting rook at <code>(0, 0)</code>, a knight at <code>(0, 1)</code>, and a queen at <code>(0, 3)</code>. Look up the piece at <code>(0, 1)</code>. Then try to add a piece using a <em>list</em> as the key, observe the error, and explain it.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.5<span class="title">Multiple return values</span></div>
+  <p>Write a function <code>stats(xs)</code> that returns the count, mean, and standard deviation of a list of numbers as a single tuple. Use it on <code>[10, 12, 23, 23, 16, 23, 21, 16]</code> and unpack the result in one line.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.6<span class="title">A named tuple</span></div>
+  <p>Using <code>typing.NamedTuple</code>, define a <code>Person</code> with fields <code>name: str</code>, <code>age: int</code>, and <code>city: str</code>. Create three of them, build a list, and sort by age (use the same <code>key=</code> idiom from Chapter 8). Then use <code>_replace</code> to make a copy of one person with a different city.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.7<span class="title">Hashability rules</span></div>
+  <p>Predict whether each can be used as a dictionary key, and explain: (a) <code>(1, 2, 3)</code>; (b) <code>(1, [2, 3])</code>; (c) <code>("Ada", 28)</code>; (d) <code>(1, (2, 3))</code>; (e) <code>(1, {2, 3})</code>; (f) <code>(1, frozenset({2, 3}))</code>. Try each in a REPL with <code>hash(...)</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 9.8<span class="title">A design question</span></div>
+  <p>You are writing a function that returns a user's profile. The profile has 8 fields. Discuss the trade-off in one paragraph between returning a bare tuple, a named tuple, a <code>dict</code>, and (looking ahead) a <code>@dataclass</code>. Which would you choose, and why?</p>
+</div>
+
+<!-- ===================== SOLUTIONS ===================== -->
+<div class="solutions" id="ch9-sol">
+  <h2>Solutions to Chapter 9 Exercises</h2>
+
+  <div class="solution">
+    <h3>Solution 9.1: The comma test</h3>
+    <p>(a) <code>tuple</code>, <code>(1, 2, 3)</code>. (b) <code>tuple</code>, <code>(1, 2, 3)</code>, parens are decorative. (c) <code>int</code>, <code>5</code>, parens are grouping, not tuple-making. (d) <code>tuple</code>, <code>(5,)</code>, the trailing comma is what makes it. (e) <code>tuple</code>, <code>()</code>, the empty case, the one time parens are required. (f) <code>tuple</code>, <code>(5,)</code>, a bare trailing comma works on the right of an assignment too. The rule to memorise: the comma makes the tuple.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 9.2: Unpack the line</h3>
+<pre data-lang="python"><code>line = <span class="tok-str">"Lovelace,Ada,1815,London"</span>
+last, first, *rest = line.split(<span class="tok-str">","</span>)
+<span class="tok-com"># last='Lovelace', first='Ada', rest=['1815', 'London']
+
+# Star on the left captures the leading items:</span>
+*head, city = line.split(<span class="tok-str">","</span>)
+<span class="tok-com"># head=['Lovelace','Ada','1815'], city='London'
+
+# Star in the middle splits front and back:</span>
+last, *middle, city = line.split(<span class="tok-str">","</span>)
+<span class="tok-com"># last='Lovelace', middle=['Ada','1815'], city='London'</span></code></pre>
+    <p>The starred name always captures the variable-length portion, with the unstarred names taking from each end as needed. The starred result is always a list.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 9.3: Choose the type</h3>
+    <p>(a) list, variable-length sequence of "a login". (b) tuple, three fields with three meanings. (c) list, homogeneous sequence of "a card". (d) tuple, two named fields. (e) list, variable-length sequence of items. (f) tuple, three differently-typed fields, the canonical compound return.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 9.4: A compound dictionary key</h3>
+<pre data-lang="python"><code>board = {(<span class="tok-num">0</span>, <span class="tok-num">0</span>): <span class="tok-str">"rook"</span>, (<span class="tok-num">0</span>, <span class="tok-num">1</span>): <span class="tok-str">"knight"</span>, (<span class="tok-num">0</span>, <span class="tok-num">3</span>): <span class="tok-str">"queen"</span>}
+board[(<span class="tok-num">0</span>, <span class="tok-num">1</span>)]         <span class="tok-com"># 'knight'
+
+board[[0, 4]] = "king"  # TypeError: unhashable type: 'list'</span></code></pre>
+    <p>A list cannot be a dictionary key because it is mutable; its hash value is not allowed to exist at all. A tuple of hashable items is itself hashable and so makes a fine compound key.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 9.5: Multiple return values</h3>
+<pre data-lang="python"><code><span class="tok-kw">import</span> statistics
+<span class="tok-kw">def</span> <span class="tok-fn">stats</span>(xs):
+    <span class="tok-kw">return</span> <span class="tok-fn">len</span>(xs), statistics.mean(xs), statistics.stdev(xs)
+
+n, m, s = stats([<span class="tok-num">10</span>, <span class="tok-num">12</span>, <span class="tok-num">23</span>, <span class="tok-num">23</span>, <span class="tok-num">16</span>, <span class="tok-num">23</span>, <span class="tok-num">21</span>, <span class="tok-num">16</span>])
+<span class="tok-fn">print</span>(n, m, s)         <span class="tok-com"># 8 18 5.237...</span></code></pre>
+    <p>The function returns a three-element tuple; the caller unpacks it into three names in one assignment. This is the idiomatic Python form of "multiple return values".</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 9.6: A named tuple</h3>
+<pre data-lang="python"><code><span class="tok-kw">from</span> typing <span class="tok-kw">import</span> NamedTuple
+
+<span class="tok-kw">class</span> <span class="tok-cls">Person</span>(NamedTuple):
+    name: <span class="tok-fn">str</span>
+    age:  <span class="tok-fn">int</span>
+    city: <span class="tok-fn">str</span>
+
+people = [Person(<span class="tok-str">"Ada"</span>, <span class="tok-num">28</span>, <span class="tok-str">"London"</span>),
+          Person(<span class="tok-str">"Linus"</span>, <span class="tok-num">54</span>, <span class="tok-str">"Helsinki"</span>),
+          Person(<span class="tok-str">"Caroline"</span>, <span class="tok-num">35</span>, <span class="tok-str">"Paris"</span>)]
+
+by_age = <span class="tok-fn">sorted</span>(people, key=<span class="tok-kw">lambda</span> p: p.age)
+ada_in_paris = people[<span class="tok-num">0</span>]._replace(city=<span class="tok-str">"Paris"</span>)</code></pre>
+    <p>The class-based form gives a type-annotated, methods-allowed declaration; sorting uses the same <code>key=</code> idiom as Chapter 8; <code>_replace</code> produces a new tuple with one field changed without mutating the original.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 9.7: Hashability rules</h3>
+    <p>(a) Yes, tuple of ints. (b) <strong>No</strong>: contains a list, which is unhashable; the unhashability is contagious. (c) Yes, tuple of str and int. (d) Yes, tuples nest fine. (e) <strong>No</strong>: a regular <code>set</code> is mutable and unhashable. (f) <strong>Yes</strong>: <code>frozenset</code> is the immutable, hashable counterpart of <code>set</code>, so the outer tuple is hashable too. The rule: a tuple is hashable iff every element is.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 9.8: A design question</h3>
+    <p>A bare tuple is the lightest but loses field meaning, so callers must remember the order, fine for two or three fields, but not eight. A <code>dict</code> gives named access at the cost of allowing arbitrary keys at runtime and no static checks. A <code>typing.NamedTuple</code> gives named access plus immutability plus type annotations, at near-zero cost, and works as a dictionary key. A <code>@dataclass</code> goes further by allowing mutation, default values, and behaviour (methods). For an eight-field profile that is mostly read, the choice is between <code>NamedTuple</code> and <code>dataclass</code>; pick <code>NamedTuple</code> if the profile is small, immutable, and frequently hashed or sent across function boundaries, and <code>dataclass</code> if the fields are likely to be updated in place or have many sensible defaults. Either is a strong choice over the bare tuple, and either is a clearer choice than a free-form dict.</p>
+  </div>
+</div>
+
+</div><!-- /chapter-inner -->
+
+<div class="page-footer">
+  <span>First Edition · 2026</span>
+  <span class="pn">Pages 252–269</span>
+  <span>Chapter 9 of 22</span>
+</div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- ================== END OF CHAPTER 9: MORE TO COME =================== -->
 <!-- ===================================================================== -->
 
 </main>
