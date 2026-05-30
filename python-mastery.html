@@ -608,6 +608,21 @@ hr.section-rule::before{content:"§ § §"}
     <a href="#ch9-ex" class="section">Exercises</a>
     <a href="#ch9-sol" class="section">Solutions</a>
   </nav>
+
+  <h4>Part III (cont.)</h4>
+  <nav>
+    <a href="#ch10"><strong>10. Dictionaries &amp; Hash Tables</strong></a>
+    <a href="#ch10-1" class="section">10.1 The Most Used Type</a>
+    <a href="#ch10-2" class="section">10.2 How a Hash Table Works</a>
+    <a href="#ch10-3" class="section">10.3 Insertion-Order</a>
+    <a href="#ch10-4" class="section">10.4 Creating Dicts</a>
+    <a href="#ch10-5" class="section">10.5 Read &amp; Write</a>
+    <a href="#ch10-6" class="section">10.6 keys, values, items</a>
+    <a href="#ch10-7" class="section">10.7 Common Patterns</a>
+    <a href="#ch10-8" class="section">10.8 Performance &amp; Security</a>
+    <a href="#ch10-ex" class="section">Exercises</a>
+    <a href="#ch10-sol" class="section">Solutions</a>
+  </nav>
 </aside>
 
 <!-- ================= MAIN ================= -->
@@ -5563,7 +5578,546 @@ ada_in_paris = people[<span class="tok-num">0</span>]._replace(city=<span class=
 </section>
 
 <!-- ===================================================================== -->
-<!-- ================== END OF CHAPTER 9: MORE TO COME =================== -->
+<!-- ================== CHAPTER 10: DICTIONARIES & HASH TABLES =========== -->
+<!-- ===================================================================== -->
+<section class="chapter" id="ch10">
+
+<div class="page-header">
+  <span class="title-left">Python · A Complete Course</span>
+  <span class="title-right">Chapter 10 · Dictionaries &amp; Hash Tables</span>
+</div>
+
+<div class="chapter-inner">
+
+<div class="chapter-header">
+  <div class="chapter-eyebrow">Chapter 10 · Part III · The Containers</div>
+  <h1>Dictionaries &amp; Hash Tables</h1>
+  <p class="deck">The single most important data structure in Python, used not only by you but by the language itself for every namespace, every object's attributes, every keyword-argument call. Average constant-time lookup, insertion-order memory since 3.7, and a one-page diagram of how that magic actually works.</p>
+</div>
+
+<div class="epigraph">
+  Dictionaries are the cornerstone of Python. Almost every program uses them, and the language itself is built on top of them.
+  <cite>— the Python tutorial, on the dictionary</cite>
+</div>
+
+<p class="opening">If you read no other chapter of this book carefully, read this one. The dictionary is the most consequential data structure in Python by some margin: not only do you use it for the obvious purposes (mapping names to numbers, looking up records by id, counting word frequencies, holding JSON-shaped data), but the language itself is built on dictionaries from the inside. Every module's global namespace is a dictionary; every class's body is a dictionary; every instance's attributes (in the common case) are a dictionary; every keyword-argument call assembles a dictionary. The whole machinery rests on a single algorithmic idea, the hash table, that gives you average constant-time lookup, insertion, and deletion no matter how large the dictionary grows. Understanding that idea will not just make your dict-using code faster; it will explain a dozen behaviours you previously had to memorise.</p>
+
+<p>This chapter covers the idea (how a hash table works), the consequences (why a list cannot be a key, why insertion order is preserved, what "average O(1)" really means), and the daily practice (creating, reading, iterating, the four or five patterns that constitute most real dict code). Eight sections, one central diagram, and the usual set of worked examples and exercises.</p>
+
+<!-- ===================== 10.1 ===================== -->
+<h2 id="ch10-1"><span class="num">10.1</span>The Most Important Data Structure in Python</h2>
+
+<p>A <strong>dictionary</strong> maps <em>keys</em> to <em>values</em>. You ask for a key and it gives you back the value associated with it. The mechanism is what makes the lookup remarkable: where finding an item in a list of a million takes, on average, half a million comparisons, finding a value in a dictionary of a million keys takes, on average, one. The dictionary does not search; it computes where the key would be, and looks there.</p>
+
+<p>The interface is small. You write a literal in braces, you look up by indexing, you assign by indexing, you delete with <code>del</code>, you iterate over keys with a plain <code>for</code> loop, and you ask membership with <code>in</code>. That is most of what most programs need.</p>
+
+<pre data-lang="python"><code>person = {
+    <span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>,
+    <span class="tok-str">"age"</span>:  <span class="tok-num">28</span>,
+    <span class="tok-str">"city"</span>: <span class="tok-str">"London"</span>,
+}
+
+person[<span class="tok-str">"name"</span>]               <span class="tok-com"># 'Ada'</span>
+person[<span class="tok-str">"city"</span>] = <span class="tok-str">"Paris"</span>      <span class="tok-com"># update an existing key</span>
+person[<span class="tok-str">"role"</span>] = <span class="tok-str">"engineer"</span>   <span class="tok-com"># add a new key</span>
+<span class="tok-kw">del</span> person[<span class="tok-str">"age"</span>]            <span class="tok-com"># remove a key</span>
+
+<span class="tok-str">"name"</span> <span class="tok-kw">in</span> person             <span class="tok-com"># True, note: 'in' checks KEYS, not values</span>
+<span class="tok-fn">len</span>(person)                 <span class="tok-com"># 3</span></code></pre>
+
+<p>But the dict's reach beyond that surface is what makes it the most important structure in the language. When you write <code>x = 5</code>, Python adds the name <code>x</code> to a dictionary that represents the current scope. When you call <code>obj.method()</code>, Python looks up <code>method</code> in a dictionary attached to <code>obj</code>'s type. When you call <code>f(name="Ada")</code>, the keyword arguments arrive as a dictionary. You can see all of this, in fact, by asking for it: <code>globals()</code> returns the module's namespace dict, <code>obj.__dict__</code> returns an instance's attribute dict, <code>vars(C)</code> returns a class body. The dictionary is not merely a data type Python provides; it is the substrate on which most of the language runs.</p>
+
+<div class="definition">
+  <div class="term">Dictionary</div>
+  <p>A mutable mapping from <em>hashable</em> keys to arbitrary values, written <code>{k1: v1, k2: v2}</code>. Type is <code>dict</code>. Implemented in CPython as a hash table, giving average constant-time lookup, insertion, and deletion. Since Python 3.7 the language guarantees that iteration follows insertion order. Used by the language itself for every namespace, every object's attributes (typically), and every set of keyword arguments.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: The Dict in Python</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/tutorial/datastructures.html#dictionaries" target="_blank" rel="noopener">Dictionaries</a><span class="source">the official tutorial section</span></li>
+    <li><a href="https://docs.python.org/3/library/stdtypes.html#mapping-types-dict" target="_blank" rel="noopener">Mapping Types: dict</a><span class="source">the complete API reference</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 10.2 ===================== -->
+<h2 id="ch10-2"><span class="num">10.2</span>How a Hash Table Works</h2>
+
+<p>Knowing the inside of a dict will not change how you write a dictionary literal, but it will explain almost every fact about how dicts behave. The data structure underneath is called a <em>hash table</em>, invented in 1953 by Hans Peter Luhn at IBM, and it is one of the most consequential algorithmic ideas of the twentieth century.</p>
+
+<p>The core trick is this: instead of searching for a key, <strong>compute</strong> where it would be. Given a key, the dictionary calls a function called <code>hash()</code> that turns the key into an integer. It then reduces that integer to the range of available slots (modulo the table size) and looks in that slot. If the key it finds there matches, the lookup is done in one step, no matter how many keys the table holds. The whole reason a dictionary is fast is that the position is computed, not searched.</p>
+
+<figure>
+  <svg viewBox="0 0 720 290" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <defs>
+      <marker id="ht1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/>
+      </marker>
+    </defs>
+    <text x="360" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">A hash table: compute where a key lives, do not search for it</text>
+
+    <!-- Step 1: the key -->
+    <rect x="40" y="60" width="100" height="44" fill="#fff" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="90" y="86" text-anchor="middle" font-size="13" font-family="JetBrains Mono, monospace" fill="#0f172a">"city"</text>
+    <text x="90" y="120" text-anchor="middle" font-size="10" fill="#475569">the key</text>
+
+    <line x1="140" y1="82" x2="180" y2="82" stroke="#0f172a" stroke-width="1.4" marker-end="url(#ht1)"/>
+
+    <!-- Step 2: hash() -->
+    <rect x="180" y="60" width="120" height="44" fill="#eef4f9" stroke="#306998"/>
+    <text x="240" y="82" text-anchor="middle" font-size="11" font-weight="700" fill="#306998">hash("city")</text>
+    <text x="240" y="98" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace" fill="#0f172a">7,103,182,...</text>
+    <text x="240" y="120" text-anchor="middle" font-size="10" fill="#475569">a big integer</text>
+
+    <line x1="300" y1="82" x2="340" y2="82" stroke="#0f172a" stroke-width="1.4" marker-end="url(#ht1)"/>
+
+    <!-- Step 3: mod size -->
+    <rect x="340" y="60" width="120" height="44" fill="#eef7ee" stroke="#3f7a3f"/>
+    <text x="400" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#3f7a3f">% table_size</text>
+    <text x="400" y="98" text-anchor="middle" font-size="13" font-family="JetBrains Mono, monospace" fill="#0f172a">slot = 2</text>
+    <text x="400" y="120" text-anchor="middle" font-size="10" fill="#475569">reduce to a slot</text>
+
+    <line x1="460" y1="82" x2="500" y2="82" stroke="#0f172a" stroke-width="1.4" marker-end="url(#ht1)"/>
+
+    <!-- Step 4: the table -->
+    <text x="600" y="50" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">table</text>
+    <g font-family="JetBrains Mono, monospace" font-size="11">
+      <rect x="500" y="60" width="180" height="22" fill="#fff" stroke="#0f172a"/>
+      <text x="510" y="76" fill="#94a3b8">0</text><text x="590" y="76" fill="#94a3b8" text-anchor="middle">·</text>
+      <rect x="500" y="82" width="180" height="22" fill="#fff" stroke="#0f172a"/>
+      <text x="510" y="98" fill="#94a3b8">1</text><text x="540" y="98">"name" → "Ada"</text>
+      <rect x="500" y="104" width="180" height="22" fill="#fdf3d3" stroke="#0f172a" stroke-width="1.5"/>
+      <text x="510" y="120" fill="#876a00">2</text><text x="540" y="120">"city" → "London"</text>
+      <rect x="500" y="126" width="180" height="22" fill="#fff" stroke="#0f172a"/>
+      <text x="510" y="142" fill="#94a3b8">3</text><text x="540" y="142">"age" → 28</text>
+      <rect x="500" y="148" width="180" height="22" fill="#fff" stroke="#0f172a"/>
+      <text x="510" y="164" fill="#94a3b8">4</text><text x="590" y="164" fill="#94a3b8" text-anchor="middle">·</text>
+    </g>
+
+    <!-- bottom commentary -->
+    <text x="360" y="200" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">Why this is fast</text>
+    <text x="360" y="220" text-anchor="middle" font-size="11" fill="#475569">The position is computed in constant time, regardless of how many keys are in the table.</text>
+    <text x="360" y="238" text-anchor="middle" font-size="11" fill="#475569">A million keys, a million-and-one keys, same one-step lookup on average.</text>
+
+    <!-- collisions -->
+    <rect x="40" y="252" width="640" height="28" fill="#fdf4f4" stroke="#cf222e"/>
+    <text x="60" y="270" font-size="11" fill="#b3261e"><tspan font-weight="700">Collisions:</tspan> two keys may hash to the same slot. The table probes the next slot, then the next, until it finds the key or an empty space. Average cost stays O(1) when the table is not too full.</text>
+  </svg>
+  <figcaption><strong>Figure 10.1.</strong> The hash-table lookup. CPython uses <em>open addressing</em>: when the computed slot is occupied by a different key, the table probes other slots (in a pseudo-random sequence) until it finds the key or a free space. The load factor is kept low (the table grows when about two-thirds full) so collisions stay infrequent.</figcaption>
+</figure>
+
+<p>Two facts about this design force themselves on every dict user. First, <strong>the key must be hashable</strong>, because the whole scheme depends on calling <code>hash(key)</code>. Lists, dicts, and sets are mutable, their hash is forbidden to exist, and they cannot be keys. Numbers, strings, tuples-of-hashable, and frozensets are immutable, their hash is stable, and they can. We laid this rule down in Chapter 3.7 and used it again in Chapter 9.5; here is where it finally pays off.</p>
+
+<p>Second, <strong>the average constant-time guarantee is "average"</strong>. On well-behaved keys (the usual case), each lookup probes one or two slots. On pathological data where many keys collide on the same slot, lookups degrade toward linear time. CPython mitigates this in two ways: by growing the table when it gets too full (so collisions stay rare) and by adding randomisation to string hashing (so an attacker cannot craft inputs that collide deliberately). Section 10.8 returns to this.</p>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Hash Tables</div>
+  <ul>
+    <li><a href="https://en.wikipedia.org/wiki/Hash_table" target="_blank" rel="noopener">Hash table</a><span class="source">the algorithm, with both chaining and open-addressing variants</span></li>
+    <li><a href="https://www.youtube.com/watch?v=npw4s1QTmPg" target="_blank" rel="noopener">Raymond Hettinger: "The Mighty Dictionary"</a><span class="source">a PyCon talk on the dict's internals</span></li>
+    <li><a href="https://github.com/python/cpython/blob/main/Objects/dictobject.c" target="_blank" rel="noopener">CPython dictobject.c</a><span class="source">the source, surprisingly readable</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 10.3 ===================== -->
+<h2 id="ch10-3"><span class="num">10.3</span>The Insertion-Order Guarantee</h2>
+
+<p>From its creation in 1991 until 2017, Python dictionaries had no defined iteration order; you got the keys in whatever order the hash function happened to put them, and any sane code treated dict ordering as random. This was unusual among modern languages and was the source of subtle bugs. In Python 3.6, the CPython team (notably Raymond Hettinger) rebuilt the dict implementation as a <em>compact hash table</em> that happened to preserve the order in which keys were inserted. In Python 3.7 the language specification made this behaviour mandatory across all implementations. Iteration order is now <strong>insertion order</strong>, and you can rely on it.</p>
+
+<pre data-lang="python"><code>d = {}
+d[<span class="tok-str">"first"</span>] = <span class="tok-num">1</span>
+d[<span class="tok-str">"second"</span>] = <span class="tok-num">2</span>
+d[<span class="tok-str">"third"</span>] = <span class="tok-num">3</span>
+
+<span class="tok-fn">list</span>(d)            <span class="tok-com"># ['first', 'second', 'third'], every time, since 3.7</span></code></pre>
+
+<p>This change had small but real practical consequences. JSON files round-trip with their key order preserved. Keyword arguments arrive in the order they were written. Code that historically used <code>collections.OrderedDict</code> for this purpose can now use a plain <code>dict</code>; <code>OrderedDict</code> still exists but is rarely needed, kept for its few features that go beyond the regular dict (such as <code>move_to_end</code> and equality that considers order).</p>
+
+<div class="note">
+  <span class="label">A subtlety</span>
+  <p>"Insertion order" means the order in which keys were <em>first</em> added. Updating an existing key with a new value does not move it. To force a key to the end of the iteration order, delete and re-insert it (or use <code>OrderedDict.move_to_end</code>).</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Dict Order</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0468/" target="_blank" rel="noopener">PEP 468: Preserving Keyword Argument Order</a><span class="source">the related kwargs ordering</span></li>
+    <li><a href="https://mail.python.org/pipermail/python-dev/2017-December/151283.html" target="_blank" rel="noopener">Guido on dict insertion order</a><span class="source">the language-spec announcement</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 10.4 ===================== -->
+<h2 id="ch10-4"><span class="num">10.4</span>Creating Dictionaries</h2>
+
+<p>Four common ways to build a dictionary, used roughly in this order of frequency.</p>
+
+<pre data-lang="python"><code><span class="tok-com"># 1. Literal: by far the most common</span>
+person = {<span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>, <span class="tok-str">"age"</span>: <span class="tok-num">28</span>}
+
+<span class="tok-com"># 2. Constructor with keyword arguments (keys must be valid identifiers)</span>
+person = <span class="tok-fn">dict</span>(name=<span class="tok-str">"Ada"</span>, age=<span class="tok-num">28</span>)
+
+<span class="tok-com"># 3. From an iterable of pairs</span>
+person = <span class="tok-fn">dict</span>([(<span class="tok-str">"name"</span>, <span class="tok-str">"Ada"</span>), (<span class="tok-str">"age"</span>, <span class="tok-num">28</span>)])
+person = <span class="tok-fn">dict</span>(<span class="tok-fn">zip</span>([<span class="tok-str">"name"</span>, <span class="tok-str">"age"</span>], [<span class="tok-str">"Ada"</span>, <span class="tok-num">28</span>]))
+
+<span class="tok-com"># 4. Dict comprehension</span>
+squares = {n: n * n <span class="tok-kw">for</span> n <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-num">5</span>)}
+<span class="tok-com"># {0: 0, 1: 1, 2: 4, 3: 9, 4: 16}</span>
+
+<span class="tok-com"># Empty: braces only, {} is an empty DICT, not an empty set</span>
+empty_dict = {}
+empty_set  = <span class="tok-fn">set</span>()</code></pre>
+
+<p>Two merging operations deserve attention because they have replaced more verbose older code. <strong>The merge operator <code>|</code></strong> (Python 3.9+) builds a new dict combining two:</p>
+
+<pre data-lang="python"><code>defaults = {<span class="tok-str">"theme"</span>: <span class="tok-str">"light"</span>, <span class="tok-str">"lang"</span>: <span class="tok-str">"en"</span>}
+user     = {<span class="tok-str">"lang"</span>: <span class="tok-str">"fr"</span>, <span class="tok-str">"timezone"</span>: <span class="tok-str">"UTC"</span>}
+
+merged = defaults | user
+<span class="tok-com"># {'theme': 'light', 'lang': 'fr', 'timezone': 'UTC'}</span>
+<span class="tok-com"># right side wins on key conflicts</span>
+
+<span class="tok-com"># The in-place version updates the left-hand dict:</span>
+defaults |= user      <span class="tok-com"># equivalent to defaults.update(user)</span></code></pre>
+
+<p>And <strong>unpacking inside a literal</strong> (PEP 448) does the same thing slightly differently:</p>
+
+<pre data-lang="python"><code>merged = {**defaults, **user}    <span class="tok-com"># same result; works on older Python too</span></code></pre>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Creation</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0584/" target="_blank" rel="noopener">PEP 584: Add Union Operators to dict</a><span class="source">the | operator's design</span></li>
+    <li><a href="https://peps.python.org/pep-0448/" target="_blank" rel="noopener">PEP 448: Additional Unpacking Generalizations</a><span class="source">where {**a, **b} came from</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 10.5 ===================== -->
+<h2 id="ch10-5"><span class="num">10.5</span>Reading and Writing: <code>get</code>, <code>setdefault</code>, and the Avoidance of <code>KeyError</code></h2>
+
+<p>The bracket form <code>d[k]</code> reads or writes a value. Writing always succeeds: if the key is present, the value is replaced; if not, it is added. Reading is where the subtlety lives. If the key is missing, <code>d[k]</code> raises <code>KeyError</code>, which is the right behaviour when "missing" means "something is wrong" and the wrong behaviour when "missing" just means "use a default".</p>
+
+<pre data-lang="python"><code>d = {<span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>}
+
+d[<span class="tok-str">"name"</span>]              <span class="tok-com"># 'Ada'</span>
+d[<span class="tok-str">"missing"</span>]           <span class="tok-com"># KeyError: 'missing'
+
+# .get returns None (or your default) when the key is absent:</span>
+d.get(<span class="tok-str">"missing"</span>)               <span class="tok-com"># None, no exception</span>
+d.get(<span class="tok-str">"missing"</span>, <span class="tok-str">"unknown"</span>)    <span class="tok-com"># 'unknown'</span>
+
+<span class="tok-com"># .setdefault both reads and writes: if the key is missing,</span>
+<span class="tok-com"># inserts the default and returns it; if present, returns the existing value.</span>
+d.setdefault(<span class="tok-str">"age"</span>, <span class="tok-num">28</span>)         <span class="tok-com"># 28 (inserted)</span>
+d.setdefault(<span class="tok-str">"age"</span>, <span class="tok-num">99</span>)         <span class="tok-com"># 28 (already present; 99 ignored)</span></code></pre>
+
+<p>Three other operations worth mastering: <code>pop</code>, <code>update</code>, and <code>in</code>.</p>
+
+<pre data-lang="python"><code>d.pop(<span class="tok-str">"age"</span>)             <span class="tok-com"># removes 'age' and returns its value, or KeyError if absent</span>
+d.pop(<span class="tok-str">"missing"</span>, <span class="tok-kw">None</span>)   <span class="tok-com"># with a default: never raises</span>
+
+d.update({<span class="tok-str">"city"</span>: <span class="tok-str">"London"</span>, <span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>})
+<span class="tok-com"># merges in place; the argument's keys overwrite existing keys</span>
+
+<span class="tok-str">"name"</span> <span class="tok-kw">in</span> d            <span class="tok-com"># True, 'in' checks KEYS, never values</span>
+<span class="tok-str">"Ada"</span> <span class="tok-kw">in</span> d.values()   <span class="tok-com"># True, explicit values-check is O(n)</span></code></pre>
+
+<div class="warning">
+  <span class="label">The <code>in</code> trap</span>
+  <p>The expression <code>x in d</code> tests whether <code>x</code> is one of the dict's <strong>keys</strong>, never one of its values. This is consistent with how <code>for k in d</code> iterates over keys, but it surprises some beginners who expect <code>"Ada" in person</code> to find the value. To check values, use <code>x in d.values()</code> (linear), and to check pairs, use <code>(k, v) in d.items()</code>.</p>
+</div>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Methods</div>
+  <ul>
+    <li><a href="https://docs.python.org/3/library/stdtypes.html#dict" target="_blank" rel="noopener">The dict reference</a><span class="source">every method, definitively</span></li>
+  </ul>
+</div>
+
+<!-- ===================== 10.6 ===================== -->
+<h2 id="ch10-6"><span class="num">10.6</span>The Three Views: <code>keys()</code>, <code>values()</code>, <code>items()</code></h2>
+
+<p>Iteration over a dict gives you the keys, in insertion order. Two other forms cover the cases when you want values instead, or both at once.</p>
+
+<pre data-lang="python"><code>d = {<span class="tok-str">"a"</span>: <span class="tok-num">1</span>, <span class="tok-str">"b"</span>: <span class="tok-num">2</span>, <span class="tok-str">"c"</span>: <span class="tok-num">3</span>}
+
+<span class="tok-kw">for</span> k <span class="tok-kw">in</span> d:             <span class="tok-com"># default: iterate over keys</span>
+    <span class="tok-fn">print</span>(k)
+
+<span class="tok-kw">for</span> v <span class="tok-kw">in</span> d.values():    <span class="tok-com"># iterate over values</span>
+    <span class="tok-fn">print</span>(v)
+
+<span class="tok-kw">for</span> k, v <span class="tok-kw">in</span> d.items(): <span class="tok-com"># iterate over both (the workhorse loop)</span>
+    <span class="tok-fn">print</span>(k, v)</code></pre>
+
+<p>The three methods return <em>views</em>, not lists. A view is a lightweight, lazy object that reflects the dict as it currently stands: if you mutate the dict, the view updates. Views also support some set-like operations (you can intersect two dicts' keys with <code>&amp;</code>, union them with <code>|</code>), which is occasionally useful.</p>
+
+<pre data-lang="python"><code>v = d.values()
+d[<span class="tok-str">"d"</span>] = <span class="tok-num">4</span>
+<span class="tok-fn">list</span>(v)             <span class="tok-com"># [1, 2, 3, 4], the view saw the new value</span>
+
+<span class="tok-com"># Set operations on key views:</span>
+a = {<span class="tok-str">"x"</span>: <span class="tok-num">1</span>, <span class="tok-str">"y"</span>: <span class="tok-num">2</span>}
+b = {<span class="tok-str">"y"</span>: <span class="tok-num">9</span>, <span class="tok-str">"z"</span>: <span class="tok-num">3</span>}
+a.keys() &amp; b.keys()  <span class="tok-com"># {'y'}, keys in both</span>
+a.keys() - b.keys()  <span class="tok-com"># {'x'}, keys only in a</span></code></pre>
+
+<div class="warning">
+  <span class="label">Do not modify a dict while iterating its view</span>
+  <p>Adding or removing keys during a <code>for k in d:</code> loop raises <code>RuntimeError: dictionary changed size during iteration</code>. The fix is to iterate over a snapshot: <code>for k in list(d):</code>. This builds a list of keys first, then iterates that list, leaving you free to mutate <code>d</code>.</p>
+</div>
+
+<!-- ===================== 10.7 ===================== -->
+<h2 id="ch10-7"><span class="num">10.7</span>Common Patterns</h2>
+
+<p>A small set of dictionary patterns covers most real code. Memorising them is one of the best returns on time in Python.</p>
+
+<div class="example">
+  <div class="example-head">Example 10.1<span class="title">Counting occurrences</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>text = <span class="tok-str">"the cat sat on the mat the cat slept"</span>
+counts = {}
+<span class="tok-kw">for</span> word <span class="tok-kw">in</span> text.split():
+    counts[word] = counts.get(word, <span class="tok-num">0</span>) + <span class="tok-num">1</span>
+<span class="tok-fn">print</span>(counts)
+<span class="tok-com"># {'the': 3, 'cat': 2, 'sat': 1, 'on': 1, 'mat': 1, 'slept': 1}
+
+# Or, with collections.Counter (Chapter 12 will revisit this):</span>
+<span class="tok-kw">from</span> collections <span class="tok-kw">import</span> Counter
+Counter(text.split()).most_common(<span class="tok-num">3</span>)
+<span class="tok-com"># [('the', 3), ('cat', 2), ('sat', 1)]</span></code></pre>
+    <p>The <code>get(word, 0) + 1</code> idiom is canonical: read the current count (zero if absent), add one, write it back. <code>Counter</code> wraps the whole pattern into one call.</p>
+  </div>
+</div>
+
+<div class="example">
+  <div class="example-head">Example 10.2<span class="title">Grouping items by a key</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>people = [
+    {<span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>,     <span class="tok-str">"team"</span>: <span class="tok-str">"A"</span>},
+    {<span class="tok-str">"name"</span>: <span class="tok-str">"Bo"</span>,      <span class="tok-str">"team"</span>: <span class="tok-str">"B"</span>},
+    {<span class="tok-str">"name"</span>: <span class="tok-str">"Cy"</span>,      <span class="tok-str">"team"</span>: <span class="tok-str">"A"</span>},
+]
+
+<span class="tok-com"># Manual grouping with setdefault:</span>
+groups = {}
+<span class="tok-kw">for</span> p <span class="tok-kw">in</span> people:
+    groups.setdefault(p[<span class="tok-str">"team"</span>], []).append(p[<span class="tok-str">"name"</span>])
+<span class="tok-com"># {'A': ['Ada', 'Cy'], 'B': ['Bo']}
+
+# With defaultdict (cleaner):</span>
+<span class="tok-kw">from</span> collections <span class="tok-kw">import</span> defaultdict
+groups = defaultdict(<span class="tok-fn">list</span>)
+<span class="tok-kw">for</span> p <span class="tok-kw">in</span> people:
+    groups[p[<span class="tok-str">"team"</span>]].append(p[<span class="tok-str">"name"</span>])</code></pre>
+    <p><code>setdefault(key, [])</code> inserts an empty list when the key is missing and returns it, so the <code>.append</code> always has somewhere to go. A <code>defaultdict(list)</code> does this implicitly: any missing-key access creates an empty list automatically. Both patterns produce the same result.</p>
+  </div>
+</div>
+
+<div class="example">
+  <div class="example-head">Example 10.3<span class="title">Inverting a dict</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>d = {<span class="tok-str">"one"</span>: <span class="tok-num">1</span>, <span class="tok-str">"two"</span>: <span class="tok-num">2</span>, <span class="tok-str">"three"</span>: <span class="tok-num">3</span>}
+inverted = {v: k <span class="tok-kw">for</span> k, v <span class="tok-kw">in</span> d.items()}
+<span class="tok-com"># {1: 'one', 2: 'two', 3: 'three'}</span></code></pre>
+    <p>A dict comprehension reads as cleanly here as it does for lists. Be aware: if the original dict has two keys with the same value, the inverted dict will collapse them into one, keeping only the last.</p>
+  </div>
+</div>
+
+<div class="example">
+  <div class="example-head">Example 10.4<span class="title">Pairs to a dict</span></div>
+  <div class="example-body">
+<pre data-lang="python"><code>pairs = [(<span class="tok-str">"a"</span>, <span class="tok-num">1</span>), (<span class="tok-str">"b"</span>, <span class="tok-num">2</span>), (<span class="tok-str">"c"</span>, <span class="tok-num">3</span>)]
+d = <span class="tok-fn">dict</span>(pairs)         <span class="tok-com"># {'a': 1, 'b': 2, 'c': 3}
+
+# The inverse, dict to pairs, is just .items():</span>
+<span class="tok-fn">list</span>(d.items())       <span class="tok-com"># [('a', 1), ('b', 2), ('c', 3)]</span></code></pre>
+    <p>The <code>dict()</code> constructor accepts any iterable of two-element pairs. Combined with <code>zip</code>, this is how you build a dict from two parallel lists in a single call.</p>
+  </div>
+</div>
+
+<!-- ===================== 10.8 ===================== -->
+<h2 id="ch10-8"><span class="num">10.8</span>Performance, Memory, and Hash Security</h2>
+
+<p>Three practical facts about dictionaries that occasionally matter beyond the average case.</p>
+
+<h3>Memory</h3>
+
+<p>A dictionary uses more memory than a list with the same items, because it stores hashes, keys, and values, and the hash table is intentionally not full (CPython keeps the load factor below about two-thirds to limit collisions). For most programs this is invisible; for code that creates a million tiny dicts where a list or named tuple would suffice, the difference is real.</p>
+
+<h3>Hash randomisation</h3>
+
+<p>Since Python 3.3, the hash of a string is randomised at interpreter start (each <code>python</code> process picks a fresh secret). The change was made in response to a real attack: a malicious user could craft a request whose keys all hashed to the same slot, turning every dictionary insertion into an O(n) operation and making the server crawl to a stop. The randomisation breaks the attack by making the hashes unpredictable. The consequence for you: <strong>do not rely on the exact value of <code>hash(some_string)</code> across runs</strong>, and do not hard-code dict iteration order across processes if it depends on hash values.</p>
+
+<pre data-lang="python"><code>$ python -c <span class="tok-str">"print(hash('hello'))"</span>
+<span class="tok-com"># 6058471826385858049</span>
+$ python -c <span class="tok-str">"print(hash('hello'))"</span>
+<span class="tok-com"># -3284854253523829641, a different value each invocation</span></code></pre>
+
+<h3>Worst-case collisions</h3>
+
+<p>Even without an attacker, every hash table has a worst case in which all keys land in the same slot. CPython's randomisation, growth strategy, and open-addressing scheme all keep this rare; in practice, dict operations are constant time on the kind of data programs actually use. For pathological inputs (say, a million keys deliberately constructed to collide), performance can degrade.</p>
+
+<div class="further">
+  <div class="fr-head">Further Reading: Performance &amp; Security</div>
+  <ul>
+    <li><a href="https://peps.python.org/pep-0456/" target="_blank" rel="noopener">PEP 456: Secure and interchangeable hash algorithm</a><span class="source">hash randomisation, in full</span></li>
+    <li><a href="https://www.python.org/dev/security/" target="_blank" rel="noopener">Python security advisories</a><span class="source">where hash collision attacks were tracked</span></li>
+  </ul>
+</div>
+
+<hr class="section-rule"/>
+
+<!-- ===================== EXERCISES ===================== -->
+<h2 id="ch10-ex">Exercises</h2>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.1<span class="title">Build a dict three ways</span></div>
+  <p>Build the dictionary <code>{"name": "Ada", "age": 28, "city": "London"}</code> three different ways: with a literal, with the <code>dict()</code> constructor, and with <code>zip</code> from two parallel lists. Confirm all three are equal.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.2<span class="title">Word frequencies</span></div>
+  <p>Given the sentence <code>"the quick brown fox jumps over the lazy dog the fox sleeps"</code>, count word frequencies into a dict using <code>.get(word, 0) + 1</code>. Then rewrite with <code>collections.Counter</code> and compare.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.3<span class="title">Group by first letter</span></div>
+  <p>Given <code>names = ["Ada", "Alan", "Bo", "Caroline", "Carl"]</code>, build a dict that maps each first letter to a list of names with that letter, using <code>setdefault</code>. Then do it again with <code>defaultdict(list)</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.4<span class="title">The <code>in</code> trap</span></div>
+  <p>Given <code>d = {"name": "Ada"}</code>, predict each: (a) <code>"name" in d</code>; (b) <code>"Ada" in d</code>; (c) <code>"Ada" in d.values()</code>; (d) <code>("name", "Ada") in d.items()</code>. Run them. Explain in one sentence why <code>"Ada" in d</code> is <code>False</code>.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.5<span class="title">Merge with the right precedence</span></div>
+  <p>Given <code>defaults = {"theme": "light", "lang": "en"}</code> and <code>user = {"lang": "fr"}</code>, build a merged dict where the user's values override the defaults. Use the <code>|</code> operator. Then do the same with <code>{**a, **b}</code>. Why does the right operand win?</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.6<span class="title">Invert a dict</span></div>
+  <p>Invert <code>{"one": 1, "two": 2, "three": 3}</code> with a dict comprehension. Then try inverting <code>{"a": 1, "b": 1, "c": 2}</code>, where two keys share a value. What happens? Why?</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.7<span class="title">A safe iteration</span></div>
+  <p>You want to remove every key whose value is <code>None</code> from a dict. Show that doing this with a direct <code>for k in d:</code> loop and <code>del d[k]</code> raises <code>RuntimeError</code>. Then write two correct versions: one that iterates over a snapshot, and one that builds a new dict with a comprehension.</p>
+</div>
+
+<div class="exercise">
+  <div class="ex-head">Exercise 10.8<span class="title">A research question</span></div>
+  <p>The Python team made dict insertion order a language guarantee in 3.7. What problem did this solve, and what older feature became largely obsolete? Read about PEP 468 or Hettinger's compact-dict design and write one paragraph summarising the change.</p>
+</div>
+
+<!-- ===================== SOLUTIONS ===================== -->
+<div class="solutions" id="ch10-sol">
+  <h2>Solutions to Chapter 10 Exercises</h2>
+
+  <div class="solution">
+    <h3>Solution 10.1: Build a dict three ways</h3>
+<pre data-lang="python"><code>a = {<span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>, <span class="tok-str">"age"</span>: <span class="tok-num">28</span>, <span class="tok-str">"city"</span>: <span class="tok-str">"London"</span>}
+b = <span class="tok-fn">dict</span>(name=<span class="tok-str">"Ada"</span>, age=<span class="tok-num">28</span>, city=<span class="tok-str">"London"</span>)
+c = <span class="tok-fn">dict</span>(<span class="tok-fn">zip</span>([<span class="tok-str">"name"</span>, <span class="tok-str">"age"</span>, <span class="tok-str">"city"</span>], [<span class="tok-str">"Ada"</span>, <span class="tok-num">28</span>, <span class="tok-str">"London"</span>]))
+a == b == c                <span class="tok-com"># True</span></code></pre>
+    <p>The literal is the cleanest when you know the keys statically. The constructor with keyword arguments is restricted to keys that are valid Python identifiers. The <code>dict(zip(...))</code> form is the canonical way to build a dict from two parallel lists.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 10.2: Word frequencies</h3>
+<pre data-lang="python"><code>text = <span class="tok-str">"the quick brown fox jumps over the lazy dog the fox sleeps"</span>
+counts = {}
+<span class="tok-kw">for</span> w <span class="tok-kw">in</span> text.split():
+    counts[w] = counts.get(w, <span class="tok-num">0</span>) + <span class="tok-num">1</span>
+
+<span class="tok-kw">from</span> collections <span class="tok-kw">import</span> Counter
+counts2 = Counter(text.split())
+counts == counts2          <span class="tok-com"># True, Counter is a dict subclass with extra methods</span>
+counts2.most_common(<span class="tok-num">3</span>)        <span class="tok-com"># [('the', 3), ('fox', 2), ('quick', 1)]</span></code></pre>
+    <p><code>Counter</code> is a subclass of <code>dict</code> tuned for this exact task. It exposes <code>most_common</code> and a small set of arithmetic operations on top of the regular dict API.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 10.3: Group by first letter</h3>
+<pre data-lang="python"><code>names = [<span class="tok-str">"Ada"</span>, <span class="tok-str">"Alan"</span>, <span class="tok-str">"Bo"</span>, <span class="tok-str">"Caroline"</span>, <span class="tok-str">"Carl"</span>]
+
+groups = {}
+<span class="tok-kw">for</span> n <span class="tok-kw">in</span> names:
+    groups.setdefault(n[<span class="tok-num">0</span>], []).append(n)
+<span class="tok-com"># {'A': ['Ada', 'Alan'], 'B': ['Bo'], 'C': ['Caroline', 'Carl']}
+
+from collections import defaultdict</span>
+groups = defaultdict(<span class="tok-fn">list</span>)
+<span class="tok-kw">for</span> n <span class="tok-kw">in</span> names:
+    groups[n[<span class="tok-num">0</span>]].append(n)</code></pre>
+    <p>Both work; the <code>defaultdict</code> version is cleaner once you have read it once. The trade-off is that a <code>defaultdict</code> silently creates entries on read (any <code>groups["X"]</code> creates an empty list), which is what you want here but occasionally hides bugs elsewhere.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 10.4: The <code>in</code> trap</h3>
+    <p>(a) <code>True</code>, <code>"name"</code> is a key. (b) <code>False</code>, <code>in</code> on a dict checks keys, not values, and <code>"Ada"</code> is a value. (c) <code>True</code>, explicit values check. (d) <code>True</code>, explicit items check, using the tuple form. The <code>in</code> operator on a dict is shorthand for <code>in d.keys()</code>; this is consistent with how the default iteration yields keys, and is faster than scanning values (which is unavoidably O(n)).</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 10.5: Merge with the right precedence</h3>
+<pre data-lang="python"><code>defaults = {<span class="tok-str">"theme"</span>: <span class="tok-str">"light"</span>, <span class="tok-str">"lang"</span>: <span class="tok-str">"en"</span>}
+user     = {<span class="tok-str">"lang"</span>: <span class="tok-str">"fr"</span>}
+
+defaults | user            <span class="tok-com"># {'theme': 'light', 'lang': 'fr'}</span>
+{**defaults, **user}       <span class="tok-com"># same result</span></code></pre>
+    <p>The right operand wins on conflicts because that is what you almost always want when merging "defaults" with "overrides": the later argument represents the user's preference. <code>|</code> codifies this rule by defining the operator to favour the right side; <code>{**a, **b}</code> works the same because later keys in a dict literal replace earlier ones.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 10.6: Invert a dict</h3>
+<pre data-lang="python"><code>{v: k <span class="tok-kw">for</span> k, v <span class="tok-kw">in</span> {<span class="tok-str">"one"</span>: <span class="tok-num">1</span>, <span class="tok-str">"two"</span>: <span class="tok-num">2</span>, <span class="tok-str">"three"</span>: <span class="tok-num">3</span>}.items()}
+<span class="tok-com"># {1: 'one', 2: 'two', 3: 'three'}
+
+{v: k for k, v in {"a": 1, "b": 1, "c": 2}.items()}
+# {1: 'b', 2: 'c'}, 'a' was overwritten by 'b'</span></code></pre>
+    <p>A dict has unique keys, so when two original entries share a value, only one survives the inversion. The later one wins (the comprehension processes keys in insertion order, and later writes overwrite earlier ones). If you need to keep both, the inverted value should be a list, built with <code>setdefault</code> or <code>defaultdict</code>.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 10.7: A safe iteration</h3>
+<pre data-lang="python"><code>d = {<span class="tok-str">"a"</span>: <span class="tok-num">1</span>, <span class="tok-str">"b"</span>: <span class="tok-kw">None</span>, <span class="tok-str">"c"</span>: <span class="tok-num">3</span>}
+
+<span class="tok-com"># Wrong:</span>
+<span class="tok-kw">for</span> k <span class="tok-kw">in</span> d:
+    <span class="tok-kw">if</span> d[k] <span class="tok-kw">is</span> <span class="tok-kw">None</span>:
+        <span class="tok-kw">del</span> d[k]
+<span class="tok-com"># RuntimeError: dictionary changed size during iteration
+
+# Right: iterate over a snapshot of the keys</span>
+<span class="tok-kw">for</span> k <span class="tok-kw">in</span> <span class="tok-fn">list</span>(d):
+    <span class="tok-kw">if</span> d[k] <span class="tok-kw">is</span> <span class="tok-kw">None</span>:
+        <span class="tok-kw">del</span> d[k]
+
+<span class="tok-com"># Right: build a new dict</span>
+d = {k: v <span class="tok-kw">for</span> k, v <span class="tok-kw">in</span> d.items() <span class="tok-kw">if</span> v <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>}</code></pre>
+    <p><code>list(d)</code> materialises the keys into a list before the loop starts; mutating the dict no longer affects what the loop iterates over. The comprehension version is usually cleaner because it avoids the explicit mutation entirely.</p>
+  </div>
+
+  <div class="solution">
+    <h3>Solution 10.8: A research question</h3>
+    <p>Before 3.7, dictionary iteration order was unspecified, and code that relied on it was buggy. The change made order predictable across implementations: JSON files now round-trip with their keys in original order, keyword arguments arrive in writing order, and code that previously needed <code>collections.OrderedDict</code> can use a plain <code>dict</code>. PEP 468 was the keyword-arguments precursor (3.6); the broader compact-dict design by Raymond Hettinger reshaped CPython's dict implementation as a two-array structure (a small index table plus a dense entries array), which both saves memory and preserves insertion order as a side effect. <code>OrderedDict</code> still exists but is now used only for its few methods that go beyond regular dicts, primarily <code>move_to_end</code> and order-sensitive equality.</p>
+  </div>
+</div>
+
+</div><!-- /chapter-inner -->
+
+<div class="page-footer">
+  <span>First Edition · 2026</span>
+  <span class="pn">Pages 270–307</span>
+  <span>Chapter 10 of 22</span>
+</div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- ================== END OF CHAPTER 10: MORE TO COME ================== -->
 <!-- ===================================================================== -->
 
 </main>
