@@ -13,7 +13,11 @@ nav.rail a{grid-template-columns:38px minmax(0,1fr)}
 .chip{font-family:var(--mono);font-size:13px;padding:0 6px;border-radius:4px;margin-right:6px;white-space:nowrap;border:1px solid currentColor}
 .chip.ok{color:var(--ok)} .chip.warn{color:var(--warn)} .chip.res{color:var(--lv3)} .chip.claim{color:var(--muted)}
 ul.links li{margin-bottom:2px}
-.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:16px;margin:8px 0 0}
+.labels{margin:24px 0 0}
+.labels-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:4px}
+.labels-head b{font-family:var(--display);font-size:17px}
+.labels-head span{color:var(--muted);font-size:16px}
+.labels .tbl{margin:8px 0 0}
 '''
 
 HEADER = r'''<header class="top">
@@ -27,6 +31,16 @@ HEADER = r'''<header class="top">
     <a href="#p3"><small style="color:var(--lv3)">Part 3</small><b>Hardware and Robotics</b><span>Chips, data centres, robots, physical AI</span></a>
     <a href="#p4"><small style="color:var(--warn)">Part 4</small><b>Future Intelligence</b><span>AGI, safety, governance, economics, careers</span></a>
   </div>
-  <div class="legend"><span><span class="chip ok">production</span>shipping and generally available</span><span><span class="chip res">research</span>a paper or lab result</span><span><span class="chip warn">demo</span>shown, not shipped</span><span><span class="chip claim">claim</span>vendor or press claim, not independently checked</span></div>
+  <div class="labels">
+    <div class="labels-head"><b>How sure is each fact?</b><span>AI changes every month, so fast-moving facts carry one of these labels.</span></div>
+    <div class="tbl"><table>
+      <tr><th>Label</th><th>What it means</th><th>How far to trust it</th></tr>
+      <tr><td><span class="chip ok">production</span></td><td>Released and generally available. You can use it today.</td><td>Reliable. Still note the version and date.</td></tr>
+      <tr><td><span class="chip res">research</span></td><td>Published in a paper or lab report.</td><td>True in the test setup; not yet a product.</td></tr>
+      <tr><td><span class="chip warn">demo</span></td><td>Shown in a video or keynote, not released.</td><td>Not usable yet. It may change or never ship.</td></tr>
+      <tr><td><span class="chip claim">claim</span></td><td>The company's own statement, not checked by anyone else.</td><td>Treat as marketing until someone re-tests it.</td></tr>
+      <tr><td><span class="chip claim">reported</span></td><td>Found only in the press or other third-party sources.</td><td>Unconfirmed. Check the official source first.</td></tr>
+    </table></div>
+  </div>
 </header>
 '''

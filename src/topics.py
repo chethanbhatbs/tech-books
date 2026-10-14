@@ -4,7 +4,7 @@ def _m(n):
     s = importlib.util.spec_from_file_location(n, R / f'{n}.py'); m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
 _h = _m('topics_head')
 CSS = _h.CSS + '\n.b4 .n{color:var(--warn)}\n'
-HEADER = _h.HEADER.replace('</div>\n  <div class="legend">', '  <a href="#labs"><small style="color:var(--muted)">Updated often</small><b>Landscape</b><span>Labs, chips, open source, what is new</span></a>\n  </div>\n  <div class="legend">', 1)
+HEADER = _h.HEADER.replace('</div>\n  <div class="labels">', '  <a href="#labs"><small style="color:var(--muted)">Updated often</small><b>Landscape</b><span>Labs, chips, open source, what is new</span></a>\n  </div>\n  <div class="labels">', 1)
 PARTS = [
  dict(nav='Part 1 · Foundations', prefix='F', cls='b1', level=('p1','Part 1 of 4','AI Foundations','How models learn, how LLMs work, and how to judge them.'), topics=_m('p1').TOPICS),
  dict(nav='Part 2 · Modern systems', prefix='M', cls='b2', level=('p2','Part 2 of 4','Modern AI Systems','RAG, agents, other AI fields, and running AI in production.'), topics=_m('p2').TOPICS),
