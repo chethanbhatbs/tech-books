@@ -1,0 +1,166 @@
+"""Quizzes, cheat sheet, revision sheet, brain breaks. Answers are stated by the rules they come from."""
+
+MODULES = [
+    ("0", "Foundations", ["0", "1"]),
+    ("1", "First repo", ["2", "3"]),
+    ("2", "See and undo", ["4", "5", "6"]),
+    ("3", "Branches", ["7", "8", "9"]),
+]
+COMING = [("4", "GitHub: remote, push, pull, clone, SSH"), ("5", "Teamwork: fork, pull requests, reviews"),
+          ("6", "Rewriting history: stash, rebase, cherry-pick"), ("7", "Advanced: tags, reflog, bisect, worktrees, Actions")]
+
+# (question, [options], correct index, explanation, from)
+QUIZ = {
+    "0": [
+        ("What is a commit?", ["A file on GitHub", "One saved snapshot with a note", "A branch name", "A copy of Git"], 1, "A commit is one snapshot of the project, with a message, author and time.", "Ch 0"),
+        ("Which one runs on your laptop?", ["GitHub", "Git", "Both need the internet", "Neither"], 1, "Git is the program on your laptop. GitHub is a website.", "Ch 0"),
+        ("Can you commit with no internet?", ["Yes", "No"], 0, "Committing is local. Only push and pull need the internet.", "Ch 0"),
+        ("Why was Git created in 2005?", ["To replace GitHub", "The Linux project lost free use of BitKeeper", "For Windows", "To store photos"], 1, "Pro Git: the free-of-charge status of BitKeeper was revoked.", "Ch 0"),
+        ("What does <i>clone</i> mean?", ["Delete a repo", "Download a repo with its whole history", "Make a branch", "Rename a file"], 1, "Clone copies a full repo, history included, to your laptop.", "Ch 0"),
+    ],
+    "1": [
+        ("<code>git config --global user.name Ravi Kumar</code> (no quotes). What name is saved?", ["Ravi Kumar", "Ravi", "Kumar", "Nothing, it errors"], 1, "The space splits it. Git keeps <code>Ravi</code> and prints no error.", "Ch 1, rule 3"),
+        ("What does <code>--global</code> mean?", ["For this repo only", "For every repo of your user on this laptop", "Online, on GitHub", "For everyone on the internet"], 1, "Global settings live in <code>~/.gitconfig</code>.", "Ch 1, rule 2"),
+        ("Reading <code>user.name</code> before you set it prints:", ["fatal: not set", "Nothing", "Your Mac name", "unknown"], 1, "It prints nothing and exits with code 1.", "Ch 1, rule 2"),
+        ("Which setting makes new repos start on <code>main</code>?", ["init.defaultBranch", "branch.main", "core.main", "user.branch"], 0, "<code>git config --global init.defaultBranch main</code>.", "Ch 1, rule 5"),
+        ("Where are global settings stored?", ["~/.gitconfig", ".git/config in every repo", "On GitHub", "/etc/git"], 0, "<code>cat ~/.gitconfig</code> shows them.", "Ch 1, rule 6"),
+        ("<code>git --versoin</code> prints:", ["the version", "unknown option: --versoin", "command not found", "nothing"], 1, "Git rejects the misspelt option and lists valid ones.", "Ch 1, rule 1"),
+    ],
+    "2": [
+        ("<code>git status</code> in a folder with no <code>.git</code>:", ["Works, shows nothing", "fatal: not a git repository", "Creates a repo", "Asks to init"], 1, "No .git folder, nothing to read.", "Ch 2, rule 1"),
+        ("Where does Git keep all snapshots?", ["In GitHub", "In the hidden .git folder", "In ~/.gitconfig", "In each file"], 1, "Delete .git and the history is gone.", "Ch 2, rule 2"),
+        ("A new file you never added is…", ["staged", "committed", "untracked", "modified"], 2, "Git sees it but has never saved it.", "Ch 2, rule 3"),
+        ("You run <code>git commit -m \"x\"</code> without <code>git add</code> on a new file:", ["It commits", "nothing added to commit", "fatal error", "It adds and commits"], 1, "The staging area is empty.", "Ch 2, rule 5"),
+        ("<code>git log</code> in a repo with no commits:", ["Prints nothing", "fatal: … does not have any commits yet", "Shows the init", "Shows files"], 1, "There is no history yet.", "Ch 2, rule 6"),
+        ("Order of the three areas:", ["repo → staging → folder", "folder → staging → repo", "staging → folder → repo", "folder → repo → staging"], 1, "Edit in the folder, add to staging, commit to the repo.", "Ch 2"),
+    ],
+    "3": [
+        ("You edited a committed file. To include it in the next commit:", ["git update", "git add file", "git commit only", "Nothing, it is automatic"], 1, "Same command as for new files.", "Ch 3, rule 1"),
+        ("<code>git add .</code> means", ["add the current file", "add everything in this folder", "add only tracked files", "add the .git folder"], 1, "<code>.</code> is the current folder.", "Ch 3, rule 2"),
+        ("Two files changed, only one staged. The commit takes", ["both", "the staged one", "none", "the newest one"], 1, "A commit takes only what is staged.", "Ch 3, rule 3"),
+        ("<code>git commit -am</code> skips <code>git add</code> for", ["every file", "files Git already tracks", "new files only", "ignored files"], 1, "New untracked files are left behind.", "Ch 3, rule 4"),
+        ("Shortest commit ID Git accepts:", ["1 character", "2 characters", "4 characters", "all 40"], 2, "Two characters gave <code>ambiguous argument</code>.", "Ch 3, rule 5"),
+        ("<code> M a.txt</code> in <code>git status --short</code> means", ["staged", "modified, not staged", "untracked", "deleted"], 1, "Right column is the working folder.", "Ch 3, rule 6"),
+    ],
+    "4": [
+        ("You staged a change. Plain <code>git diff</code> shows", ["the change", "nothing", "an error", "the last commit"], 1, "It compares folder with staging, which now match.", "Ch 4, rule 2"),
+        ("What will my next commit contain?", ["git diff", "git diff --staged", "git log", "git status -s"], 1, "Staging area vs last commit.", "Ch 4, rule 2"),
+        ("A diff line starting with <code>+</code> was", ["removed", "added", "unchanged", "renamed"], 1, "+ added, - removed.", "Ch 4"),
+        ("<code>HEAD~1</code> is", ["the next commit", "the commit before the current one", "the first commit", "a branch"], 1, "One step back from HEAD.", "Ch 4, rule 5"),
+        ("Which shows the files each commit changed?", ["git log --stat", "git status", "git diff", "git branch"], 0, "<code>-p</code> shows full changes.", "Ch 4, rule 4"),
+    ],
+    "5": [
+        ("<code>git restore file</code> on an unstaged edit:", ["keeps the edit", "throws the edit away for good", "commits it", "stages it"], 1, "The edit was never saved, so it is gone.", "Ch 5, rule 1"),
+        ("<code>git restore --staged</code> in a repo with no commits:", ["works", "fatal: could not resolve HEAD", "deletes the file", "commits"], 1, "No HEAD to copy from. Use <code>git rm --cached</code>.", "Ch 5, rule 2"),
+        ("After <code>git commit --amend</code> the commit ID", ["stays the same", "changes", "becomes HEAD~1", "is deleted"], 1, "It is a new commit that replaces the old one.", "Ch 5, rule 3"),
+        ("Safe undo for a commit others already have:", ["reset --hard", "revert", "amend", "restore"], 1, "Revert adds a new commit; history is kept.", "Ch 5, rule 4"),
+        ("<code>git reset --soft HEAD~1</code> leaves the changes", ["deleted", "staged", "unstaged", "pushed"], 1, "--mixed leaves them unstaged; --hard deletes them.", "Ch 5, rule 5"),
+        ("Which reset deletes your changes from the folder?", ["--soft", "--mixed", "--hard", "none"], 2, "No warning is shown.", "Ch 5, rule 5"),
+    ],
+    "6": [
+        ("A file listed in .gitignore that was never committed:", ["shows as untracked", "is hidden from status", "is deleted", "is committed"], 1, "Git acts as if it cannot see it.", "Ch 6, rule 1"),
+        ("<code>*.log</code> ignores", ["the file *.log", "every file ending in .log", "the log folder", "nothing"], 1, "<code>*</code> matches any characters.", "Ch 6, rule 2"),
+        ("<code>git add .env</code> when .env is ignored:", ["adds it", "refuses: ignored by .gitignore", "deletes it", "fatal"], 1, "<code>-f</code> forces, but not for secrets.", "Ch 6, rule 3"),
+        ("A file committed before you added it to .gitignore:", ["is now ignored", "is still tracked", "is deleted", "is renamed"], 1, "Use <code>git rm --cached</code> to stop tracking it.", "Ch 6, rule 4"),
+        ("Should .gitignore itself be committed?", ["Yes", "No"], 0, "So everyone gets the same rules.", "Ch 6"),
+    ],
+    "7": [
+        ("<code>git branch menu</code> then <code>git branch</code>. The <code>*</code> is on", ["menu", "main", "both", "neither"], 1, "Creating a branch does not move you.", "Ch 7, rule 2"),
+        ("Create and move to a new branch:", ["git branch -m x", "git switch -c x", "git merge x", "git new x"], 1, "<code>-c</code> means create.", "Ch 7, rule 4"),
+        ("<code>git switch menus</code> when no such branch exists:", ["creates it", "fatal: invalid reference: menus", "switches to main", "nothing"], 1, "Use -c to create.", "Ch 7, rule 3"),
+        ("A file committed only on branch menu, after <code>git switch main</code>:", ["is deleted forever", "is not in the folder, but safe in Git", "is copied to main", "causes an error"], 1, "Switch back and it returns.", "Ch 7, rule 5"),
+        ("Git refuses to switch when", ["you have any commit", "an uncommitted edit would be overwritten", "the branch is new", "always"], 1, "Commit or stash first.", "Ch 7, rule 6"),
+    ],
+    "8": [
+        ("To bring branch <code>menu</code> into main you stand on", ["menu", "main", "either", "a new branch"], 1, "<code>git merge X</code> brings X here.", "Ch 8"),
+        ("main had no new commits. The merge is a", ["merge commit", "fast-forward", "conflict", "revert"], 1, "Git just slides the label.", "Ch 8, rule 1"),
+        ("A merge commit has how many parents?", ["0", "1", "2", "3"], 2, "One from each branch.", "Ch 8, rule 2"),
+        ("Running <code>git merge main</code> while on menu (main has nothing new):", ["merges menu into main", "Already up to date.", "conflict", "fatal"], 1, "You asked to bring main into menu.", "Ch 8, rule 3"),
+        ("<code>git branch -d idea</code> when idea is not merged:", ["deletes it", "error: not fully merged", "merges it", "renames it"], 1, "<code>-D</code> forces.", "Ch 8, rule 4"),
+    ],
+    "9": [
+        ("A conflict happens when both branches", ["added different files", "changed the same lines", "have commits", "were renamed"], 1, "Different lines merge on their own.", "Ch 9"),
+        ("Between <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> and <code>=======</code> is", ["their version", "your current branch's version", "the old version", "a comment"], 1, "After ======= is the branch being merged.", "Ch 9, rule 3"),
+        ("After editing the conflicted file you run", ["git commit only", "git add file, then git commit", "git merge again", "git restore"], 1, "<code>git add</code> marks it fixed.", "Ch 9, rule 4"),
+        ("Does <code>git add</code> stop you if markers remain?", ["Yes", "No"], 1, "Check with <code>git diff --cached --check</code>.", "Ch 9, rule 5"),
+        ("Cancel the whole merge:", ["git merge --abort", "git reset --hard HEAD~5", "git branch -D", "git restore ."], 0, "Back to before the merge.", "Ch 9, rule 6"),
+    ],
+}
+
+# (command, what it does, example steps to run for a real output)
+CHEAT = [
+    ("git --version", "check Git is installed", ["git --version"]),
+    ('git config --global user.name "Name"', "set your name for every repo", None),
+    ("git config --global init.defaultBranch main", "new repos start on main", None),
+    ("git init", "turn this folder into a repo", ["git init"]),
+    ("git status", "where every file is", ["git init -q", "echo a > a.txt", "git status --short"]),
+    ("git add file / git add .", "stage one file / everything here", None),
+    ('git commit -m "msg"', "save what is staged", ["git init -q", "echo a > a.txt", "git add .", 'git commit -m "Add a"']),
+    ('git commit -am "msg"', "stage tracked changes and commit", None),
+    ("git log --oneline", "short history", ["git init -q", "echo a > a.txt", "git add .", 'git commit -q -m "Add a"', "git log --oneline"]),
+    ("git diff", "unstaged changes", None),
+    ("git diff --staged", "what the next commit contains", None),
+    ("git show [ID]", "one commit and its changes", None),
+    ("git restore file", "throw away an unstaged edit", None),
+    ("git restore --staged file", "unstage, keep the edit", None),
+    ("git commit --amend", "replace the last commit", None),
+    ("git revert ID", "undo a commit with a new commit", None),
+    ("git reset --soft HEAD~1", "take back the last commit, keep changes staged", None),
+    ("git reset --hard HEAD~1", "take back the last commit and delete its changes", None),
+    ("git rm file / git mv a b", "delete / rename and stage", None),
+    ("git rm --cached file", "stop tracking, keep on disk", None),
+    ("git check-ignore -v file", "which .gitignore line ignores it", None),
+    ("git branch", "list branches", None),
+    ("git switch -c name", "create a branch and move to it", ["git init -q", "echo a > a.txt", "git add .", 'git commit -q -m "A"', "git switch -c menu"]),
+    ("git switch name", "move to a branch", None),
+    ("git merge name", "bring that branch into this one", None),
+    ("git branch -d name", "delete a merged branch", None),
+    ("git merge --abort", "cancel a merge with conflicts", None),
+    ("git log --oneline --graph --all", "draw every branch", None),
+    ("git diff --cached --check", "find leftover conflict markers", None),
+]
+
+# (topic, one-line definition, example steps)
+REVISION = [
+    ("Version control", "Saves snapshots of a folder so you can see or go back to any of them.", None),
+    ("Git vs GitHub", "Git is the program on your laptop; GitHub is a website that stores a copy.", None),
+    ("Commit", "One saved snapshot with a message, an author and a time.", None),
+    ("Repository", "A folder Git watches, with all its history in .git.", ["git init"]),
+    ("git config", "Saves settings such as your name and email.", None),
+    ("Staging area", "The tray of changes picked for the next commit.", ["git init -q", "echo a > a.txt", "git add a.txt", "git status --short"]),
+    ("Untracked", "A file Git has never saved.", ["git init -q", "echo a > a.txt", "git status --short"]),
+    ("git commit", "Saves what is staged as a new snapshot.", ["git init -q", "echo a > a.txt", "git add .", 'git commit -m "Add a"']),
+    ("git log", "Lists commits, newest first.", ["git init -q", "echo a > a.txt", "git add .", 'git commit -q -m "Add a"', "git log --oneline"]),
+    ("Modified", "A tracked file changed since the last commit.", ["git init -q", "echo a > a.txt", "git add .", 'git commit -q -m "A"', "echo b >> a.txt", "git status --short"]),
+    ("Commit ID", "A 40-character checksum naming a commit; 4+ characters are enough.", None),
+    ("git diff", "Shows changed lines: + added, - removed.", ["git init -q", "echo a > a.txt", "git add .", 'git commit -q -m "A"', "echo b >> a.txt", "git diff"]),
+    ("HEAD", "The commit you are on now. HEAD~1 is the one before.", None),
+    ("git restore", "Copies a file back from the last saved version.", None),
+    ("git commit --amend", "Replaces the last commit with a corrected one.", None),
+    ("git revert", "Adds a commit that undoes an earlier one.", None),
+    ("git reset", "Moves the branch back; --soft/--mixed/--hard decide what happens to changes.", None),
+    (".gitignore", "Lists files Git should not see.", ["git init -q", "echo x > debug.log", "echo '*.log' > .gitignore", "git status --short"]),
+    ("Branch", "A movable label on a commit; a separate line of work.", ["git init -q", "echo a > a.txt", "git add .", 'git commit -q -m "A"', "git branch idea", "git branch"]),
+    ("git switch", "Moves you to another branch.", None),
+    ("Fast-forward", "A merge where the receiving branch had nothing new, so its label just moves.", None),
+    ("Merge commit", "A commit with two parents that joins two branches.", None),
+    ("Conflict", "Both branches changed the same lines; you choose the result.", None),
+    ("git merge --abort", "Cancels a merge and goes back to before it.", None),
+]
+
+FACTS = [
+    ("Git's first commit was made on 7 April 2005 by Linus Torvalds. Its message: <i>Initial revision of \"git\", the information manager from hell</i>.",
+     ("GitHub: git/git first commit", "https://github.com/git/git/commit/e83c5163316f89bfbde7d9ab23ca2e25604af290")),
+    ("Every commit ID is a SHA-1 checksum: 40 characters of 0-9 and a-f, worked out from the content. Change one byte and the ID changes.",
+     ("Pro Git 1.3", "https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F")),
+    ("GitHub says it has 225M+ developers and 800M+ repositories.", ("github.com/about, read 26 Oct 2026", "https://github.com/about")),
+    ("Git was built to handle a project as big as the Linux kernel, fast, with thousands of parallel branches.",
+     ("Pro Git 1.2", "https://git-scm.com/book/en/v2/Getting-Started-A-Short-History-of-Git")),
+    ("Nearly every Git command works offline, because your laptop holds the whole history.",
+     ("Pro Git 1.3", "https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F")),
+]
+JOKES = [
+    "Why did the developer refuse to <code>git reset --hard</code> on Friday? Weekends are for commitment, not regret.",
+    "My code and I have a healthy relationship: we merge, we conflict, we resolve.",
+    "<code>git commit -m \"final\"</code>, <code>git commit -m \"final 2\"</code>, <code>git commit -m \"really final\"</code>. Old habits.",
+]

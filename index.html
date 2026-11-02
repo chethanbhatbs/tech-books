@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tech Books</title>
+<style>
+:root{--bg:#fafaf9;--card:#fff;--ink:#1c1c1a;--mute:#5f5f5a;--line:#e4e4e0;--accent:#2f5bd3}
+@media (prefers-color-scheme:dark){:root{--bg:#151514;--card:#1d1d1b;--ink:#ededea;--mute:#a3a39d;--line:#2e2e2b;--accent:#8aa8ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:56px 16px}
+h1{font-size:32px;margin:0 0 6px}.lead{color:var(--mute);margin:0 0 32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{display:flex;flex-direction:column;gap:8px;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:inherit;text-decoration:none}
+.card:hover{background:color-mix(in srgb,var(--accent) 6%,var(--card))}
+.card h2{font-size:18px;margin:0}.card p{margin:0;color:var(--mute);font-size:14px;flex:1}.card span{color:var(--accent);font-size:14px;font-weight:600}
+</style></head><body><main>
+  <h1>Tech Books</h1>
+  <p class="lead">7 free books on Git, Python, HTML, Claude, AI and QA.</p>
+  <div class="grid">
+    <a class="card" href="git-from-zero/git-course/git-course.html"><h2>Git From Zero</h2><p>Git and GitHub from the first command: commits, branches, merges, pull requests.</p><span>Open book</span></a>
+    <a class="card" href="python-from-zero/python-course/python-course.html"><h2>Python From Zero</h2><p>Python revision notes plus an interactive course book with quizzes.</p><span>Open book</span></a>
+    <a class="card" href="python-mastery/python-mastery.html"><h2>Python Mastery</h2><p>Two volumes: an in-depth textbook and a working handbook with cheat tables and exercises.</p><span>Open book</span></a>
+    <a class="card" href="html-from-zero/html-course.html"><h2>HTML From Zero</h2><p>HTML from a blank page: tags, attributes, text, links and images, every example rendered.</p><span>Open book</span></a>
+    <a class="card" href="claude-handbook/index.html"><h2>Claude Handbook</h2><p>Install and use Claude, run Claude Code and connect tools, and how MCP works inside.</p><span>Open book</span></a>
+    <a class="card" href="ai-handbook/index.html"><h2>AI Handbook</h2><p>58 AI and emerging-tech topics for QA engineers, each in the same template.</p><span>Open book</span></a>
+    <a class="card" href="qa-handbook/index.html"><h2>QA Handbook</h2><p>36 chapters every QA engineer needs, from test cases to testing AI agents.</p><span>Open book</span></a>
+  </div>
+</main></body></html>
