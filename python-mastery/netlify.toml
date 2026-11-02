@@ -1,0 +1,24 @@
+# Netlify static-site config for the Python Mastery series.
+# No build step; the repo IS the site.
+
+[build]
+  publish = "."
+  command = ""
+
+# HTML books: short cache so updates appear quickly.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
+# PDFs: longer cache; they change less often than HTML.
+[[headers]]
+  for = "/*.pdf"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# Cover thumbnails and the feature page: long cache, content-hashed paths.
+[[headers]]
+  for = "/docs/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

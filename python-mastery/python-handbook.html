@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The Python Handbook, A Working Book, Scratch to Advanced</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== BASE (matches the textbook's book aesthetic) ===================== */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:16px}
+body{margin:0;background:#eceef1;color:#1f2328;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  line-height:1.7;-webkit-font-smoothing:antialiased;}
+:root{
+  --bg:#fff;--side:#fafbfc;--ink:#1f2328;--muted:#5b6470;--border:#d8dde3;--border-soft:#e9ecf0;
+  --accent:#306998;--accent-dk:#1f4d75;--yellow:#ffd43b;
+  --code-bg:#fbf8f1;--code-border:#e7ddc7;
+}
+
+/* ===================== LAYOUT ===================== */
+.book{max-width:1280px;margin:0 auto;background:var(--bg);
+  display:grid;grid-template-columns:280px 1fr;min-height:100vh;box-shadow:0 0 0 1px var(--border);}
+.side{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+  background:var(--side);border-right:1px solid var(--border);padding:28px 22px;}
+main{min-width:0}
+
+/* ===================== SIDEBAR ===================== */
+.side .brand{font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:20px;letter-spacing:-0.01em}
+.side .brand .py{color:var(--accent)}
+.side .sub{font-size:12px;color:var(--muted);margin:2px 0 22px}
+.side h5{font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin:22px 0 7px}
+.side nav a{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;margin:1px 0;
+  border-radius:6px;font-size:13.5px;color:#374151;text-decoration:none;border-left:2px solid transparent}
+.side nav a:hover{background:#eef2f6;border-left-color:var(--accent);color:var(--accent)}
+.side nav a.section{padding-left:22px;color:var(--muted);font-size:12.5px}
+.side nav a .n{font-family:'JetBrains Mono',monospace;font-size:11px;color:#9aa3ad}
+.side nav a.soon{color:#a6adb5}.side nav a.soon .n{color:#c9cfd6}
+
+/* ===================== COVER ===================== */
+.cover{padding:80px 80px 60px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,#fff 0%,#f7fafc 100%);position:relative;overflow:hidden}
+.cover::before{content:"";position:absolute;top:-100px;right:-100px;width:380px;height:380px;
+  background:radial-gradient(circle,var(--accent) 0%,transparent 70%);opacity:.06}
+.cover .ed{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.15em;color:var(--accent);font-weight:600;text-transform:uppercase}
+.cover h1{font-family:'Source Serif 4',Georgia,serif;font-size:58px;line-height:1.04;margin:16px 0 12px;font-weight:700;color:#0f172a;letter-spacing:-0.025em}
+.cover h1 .py{color:var(--accent)}
+.cover .tagline{font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:21px;color:#475569;max-width:640px;line-height:1.45}
+.cover .imprint{margin-top:36px;display:flex;gap:18px;align-items:center;font-size:13px;color:#475569}
+.cover .imprint .logo{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-dk));
+  display:flex;align-items:center;justify-content:center;color:var(--yellow);font-family:'Source Serif 4',serif;font-size:24px;font-weight:700}
+
+/* ===================== LEARNING PATH (roadmap, book-styled) ===================== */
+.path{padding:54px 80px;border-bottom:1px solid var(--border);background:var(--side)}
+.path h2{font-family:'Source Serif 4',Georgia,serif;font-size:30px;margin:0 0 6px;font-weight:700;text-align:center;color:#0f172a}
+.path .lede{text-align:center;color:var(--muted);font-size:14.5px;margin:0 auto 34px;max-width:640px;font-style:italic;font-family:'Source Serif 4',serif}
+.tier{margin:0 auto 26px;max-width:920px}
+.tier .tlabel{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:6px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline}
+.tier .tlabel em{font-style:italic;font-family:'Source Serif 4',serif;font-size:14px;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400}
+.stages{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stage{border:1px solid var(--border);border-radius:8px;background:#fff;padding:14px 15px;display:flex;flex-direction:column}
+.stage .sn{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);font-weight:600}
+.stage h4{font-family:'Source Serif 4',Georgia,serif;margin:3px 0 8px;font-size:16px;font-weight:600;color:#0f172a}
+.stage .mods{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.stage .mods a{font-size:12.5px;color:#374151;text-decoration:none}
+.stage .mods a:hover{color:var(--accent);text-decoration:underline}
+.stage .mods a.soon{color:#a6adb5;pointer-events:none}
+.stage .gain{margin-top:auto;font-size:12px;color:var(--muted);font-style:italic;border-top:1px dashed var(--border);padding-top:8px}
+@media(max-width:1100px){.stages{grid-template-columns:repeat(2,1fr)}}
+
+/* ===================== PAGE HEADER / FOOTER ===================== */
+.page-header{display:flex;justify-content:space-between;align-items:baseline;max-width:780px;margin:0 auto;
+  padding:18px 24px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#475569}
+.page-header .l{color:#0f172a;font-weight:600}.page-header .r{color:var(--accent)}
+.page-footer{display:flex;justify-content:space-between;align-items:baseline;max-width:780px;margin:44px auto 0;
+  padding:10px 24px 30px;border-top:1px solid #cbd5e1;font-size:11px;color:#64748b;letter-spacing:0.05em}
+.page-footer .pn{font-family:'JetBrains Mono',monospace;font-weight:600;color:#0f172a}
+
+/* ===================== MODULE (a "chapter") ===================== */
+.chapter{border-bottom:1px solid var(--border)}
+.chapter:last-of-type{border-bottom:0}
+.cinner{max-width:780px;margin:0 auto;padding:36px 24px 0}
+.m-header{border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:30px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;color:var(--accent);font-weight:600;text-transform:uppercase}
+.chapter h1{font-family:'Source Serif 4',Georgia,serif;font-size:40px;line-height:1.12;margin:8px 0 12px;font-weight:700;color:#0f172a;letter-spacing:-0.015em}
+.deck{font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:18px;color:#475569;margin:0;line-height:1.5}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.meta span{font-size:11.5px;background:#eef2f6;border:1px solid var(--border-soft);border-radius:6px;padding:3px 9px;color:#475569}
+.meta span b{color:var(--accent-dk)}
+
+.chapter h2{font-family:'Source Serif 4',Georgia,serif;font-size:23px;font-weight:700;margin:40px 0 10px;color:#0f172a;letter-spacing:-0.01em}
+.chapter h2 .hint{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-right:10px;vertical-align:2px}
+.chapter h3{font-size:16px;font-weight:700;margin:24px 0 8px;color:#1e293b}
+.chapter p{margin:0 0 15px;color:#1f2937;text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+.chapter p strong,.chapter p b{color:#0f172a;font-weight:600}
+.chapter ul,.chapter ol{padding-left:24px;color:#1f2937;margin:0 0 15px}
+.chapter li{margin:5px 0}
+.opening::first-letter{font-family:'Source Serif 4',Georgia,serif;font-size:60px;line-height:.82;float:left;padding:7px 11px 0 0;color:var(--accent);font-weight:700}
+
+/* definition */
+.def{background:#f5f8fb;border:1px solid #d4e1ee;border-left:4px solid var(--accent);border-radius:6px;padding:13px 16px;margin:10px 0 18px}
+.def .term{font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:17px;color:var(--accent-dk);margin-bottom:3px}
+.def .term::before{content:"DEFINITION";font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.06em;
+  background:var(--accent);color:#fff;padding:2px 6px;border-radius:3px;margin-right:10px;vertical-align:2px;font-weight:700}
+.def p{margin:0;text-align:left;font-size:14.5px;color:#374151}
+
+/* code: cream, with HIGHLY VISIBLE comments */
+code{font-family:'JetBrains Mono',monospace;font-size:0.86em;background:#f0e9d8;border:1px solid var(--code-border);padding:1px 5px;border-radius:4px;color:#7a3318}
+pre{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.62;background:var(--code-bg);
+  border:1px solid var(--code-border);border-left:3px solid var(--accent);border-radius:5px;
+  padding:14px 16px;overflow-x:auto;margin:10px 0;color:#1f2328;tab-size:4;position:relative}
+pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit}
+pre[data-l]::before{content:attr(data-l);position:absolute;top:7px;right:11px;font-size:9.5px;letter-spacing:0.06em;
+  text-transform:uppercase;color:#b3a988;font-weight:700;font-family:'Inter',sans-serif}
+.tok-com{color:#2e7d32;font-style:italic;font-weight:500}   /* comments: clear green, readable */
+.tok-kw{color:#cf222e;font-weight:600}
+.tok-str{color:#9a3e00}
+.tok-fn{color:#6f42c1}
+.tok-num{color:#0550ae}
+.out{background:#eef6ee;border:1px solid #c8e3c8;border-left:3px solid #2e7d32;border-radius:5px;
+  padding:10px 14px;margin:8px 0 16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#1b4d1b;white-space:pre-wrap}
+.out::before{content:"OUTPUT";display:block;font-size:9px;letter-spacing:0.1em;color:#2e7d32;font-weight:700;margin-bottom:5px;font-family:'Inter',sans-serif}
+
+/* worked example */
+.eg{border:1px solid #f0d98a;border-left:4px solid #e0a800;background:#fffdf5;border-radius:6px;margin:14px 0;overflow:hidden}
+.eg .egh{background:#fdf3d3;padding:7px 15px;font-size:12px;font-weight:700;color:#8a6300;border-bottom:1px solid #f0d98a;letter-spacing:0.03em}
+.eg .egh b{color:#5c4300}
+.eg .egb{padding:5px 16px 13px}
+.eg .egb p{font-size:13.5px;color:#4b5563;margin:6px 0 4px;text-align:left}
+
+/* edge cases & errors */
+.errors{border:1px solid #f3c2c2;border-left:4px solid #cf222e;background:#fdf4f4;border-radius:6px;padding:13px 17px;margin:16px 0}
+.errors .eh{font-weight:700;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#b3261e;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.errors .eh::before{content:"⚠";font-size:15px}
+.errors p{text-align:left;font-size:14px;margin:0 0 9px}
+.errors pre{background:#fff;border-color:#f0d0d0;border-left-color:#cf222e;margin:6px 0 4px}
+.err-out{color:#b3261e;font-weight:600}
+
+/* think about it */
+.think{border:1px solid #c9bdf0;border-left:4px solid #6f42c1;background:#f7f4fd;border-radius:6px;padding:13px 17px;margin:16px 0}
+.think .th{font-weight:700;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#5a2da0;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.think .th::before{content:"?";background:#6f42c1;color:#fff;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.think p{text-align:left;font-size:14px;margin:0 0 8px}
+.think ol{margin:0 0 4px;padding-left:22px;font-size:14px}.think li{margin:5px 0}
+details.reveal{margin-top:8px;border-top:1px dashed #c9bdf0;padding-top:9px}
+details.reveal summary{cursor:pointer;font-weight:600;font-size:13px;color:#6f42c1;list-style:none}
+details.reveal summary::-webkit-details-marker{display:none}
+details.reveal summary::before{content:"▸ Reveal the thinking"}
+details.reveal[open] summary::before{content:"▾ The thinking"}
+details.reveal .rv{margin-top:9px;font-size:13.5px;color:#3b2d5a}
+details.reveal .rv p{text-align:left;margin:0 0 6px}
+
+/* tables */
+table{border-collapse:collapse;width:100%;margin:12px 0 18px;font-size:14px;border:1px solid var(--border)}
+th{background:#f1f5f9;text-align:left;padding:8px 12px;font-weight:700;font-size:12px;border-bottom:2px solid #94a3b8;color:#0f172a;font-family:'Inter',sans-serif}
+td{padding:7px 12px;border-bottom:1px solid var(--border-soft);vertical-align:top;color:#1f2937}
+tr:last-child td{border-bottom:0}tr:nth-child(even) td{background:#fafbfc}
+td code{background:#f0e9d8;font-size:0.9em}
+
+/* tip */
+.tip{background:#fffbeb;border:1px solid #fde68a;border-left:4px solid var(--yellow);border-radius:6px;padding:11px 15px;margin:13px 0;font-size:14px;display:flex;gap:10px}
+.tip .l{font-weight:700;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#876a00;flex-shrink:0;padding-top:2px}
+.tip p{margin:0;text-align:left}
+
+/* exercises + solutions */
+.ex{background:#f4f7fb;border:1px solid #d4e1ee;border-radius:7px;padding:15px 18px;margin:18px 0}
+.ex .h{font-weight:700;font-size:12.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;display:flex;align-items:center;gap:8px}
+.ex .h::before{content:"✎";font-size:15px}
+.ex ol{margin:0;padding-left:24px}.ex ol li{margin:6px 0}
+details.ans{margin-top:13px;border-top:1px dashed #c4d3e3;padding-top:11px}
+details.ans summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent);list-style:none}
+details.ans summary::-webkit-details-marker{display:none}
+details.ans summary::before{content:"▸ Show answers"}
+details.ans[open] summary::before{content:"▾ Answers"}
+details.ans ol{padding-left:22px;font-size:13.5px;margin-top:10px}details.ans ol li{margin:5px 0}
+
+.anchor{scroll-margin-top:10px}
+hr.rule{border:0;text-align:center;margin:34px 0;color:#cbd5e1;letter-spacing:1em}hr.rule::before{content:"§ § §"}
+
+@media(max-width:980px){.book{grid-template-columns:1fr}.side{position:relative;height:auto}
+  .cover,.path{padding-left:24px;padding-right:24px}.cover h1{font-size:40px}.stages{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="book">
+
+<!-- ===================== SIDEBAR ===================== -->
+<aside class="side">
+  <div class="brand"><span class="py">Python</span> Handbook</div>
+  <div class="sub">A working book · Scratch → Advanced</div>
+
+  <h5>Front Matter</h5>
+  <nav>
+    <a href="#cover">Title Page</a>
+    <a href="#path">The Learning Path</a>
+  </nav>
+
+  <h5>Beginner · Modules</h5>
+  <nav>
+    <a href="#m1"><span>1 · Getting Started</span><span class="n">01</span></a>
+    <a href="#m2"><span>2 · Variables &amp; Types</span><span class="n">02</span></a>
+    <a href="#m3"><span>3 · Numbers &amp; Math</span><span class="n">03</span></a>
+    <a href="#m4"><span>4 · Strings</span><span class="n">04</span></a>
+    <a href="#m5"><span>5 · Booleans &amp; Operators</span><span class="n">05</span></a>
+    <a href="#m6"><span>6 · Lists</span><span class="n">06</span></a>
+    <a href="#" class="soon"><span>7 · Tuples</span><span class="n">07</span></a>
+    <a href="#" class="soon"><span>8 · Dictionaries</span><span class="n">08</span></a>
+    <a href="#" class="soon"><span>9 · Sets</span><span class="n">09</span></a>
+    <a href="#" class="soon"><span>10 · Control Flow</span><span class="n">10</span></a>
+    <a href="#" class="soon"><span>11 · Loops</span><span class="n">11</span></a>
+    <a href="#" class="soon"><span>12 · Comprehensions</span><span class="n">12</span></a>
+  </nav>
+
+  <h5>Intermediate <span style="font-weight:500;text-transform:none">(soon)</span></h5>
+  <nav>
+    <a href="#" class="soon"><span>Functions</span><span class="n">13</span></a>
+    <a href="#" class="soon"><span>Modules &amp; Packages</span><span class="n">14</span></a>
+    <a href="#" class="soon"><span>Errors &amp; Exceptions</span><span class="n">15</span></a>
+    <a href="#" class="soon"><span>Files &amp; I/O</span><span class="n">16</span></a>
+    <a href="#" class="soon"><span>Classes &amp; OOP</span><span class="n">17</span></a>
+    <a href="#" class="soon"><span>Inheritance &amp; Dunders</span><span class="n">18</span></a>
+  </nav>
+
+  <h5>Advanced <span style="font-weight:500;text-transform:none">(soon)</span></h5>
+  <nav>
+    <a href="#" class="soon"><span>Iterators &amp; Generators</span><span class="n">19</span></a>
+    <a href="#" class="soon"><span>Decorators &amp; Closures</span><span class="n">20</span></a>
+    <a href="#" class="soon"><span>Type Hints &amp; Dataclasses</span><span class="n">21</span></a>
+    <a href="#" class="soon"><span>Standard Library</span><span class="n">22</span></a>
+    <a href="#" class="soon"><span>Concurrency</span><span class="n">23</span></a>
+    <a href="#" class="soon"><span>Testing &amp; Packaging</span><span class="n">24</span></a>
+  </nav>
+</aside>
+
+<main>
+
+<!-- ===================== COVER ===================== -->
+<section class="cover" id="cover">
+  <div class="ed">A Working Book · First Edition · 2026</div>
+  <h1>The <span class="py">Python</span> Handbook</h1>
+  <p class="tagline">Learn Python from your first line of code to professional, idiomatic programs. Every topic is explained, defined, demonstrated, stress-tested against its edge cases, and practised.</p>
+  <div class="imprint"><div class="logo">Py</div>
+    <div><strong style="color:#0f172a">Beginner through Advanced</strong><br/>Concepts · Definitions · Worked Examples · Edge Cases · Things to Think About · Exercises with Solutions</div>
+  </div>
+</section>
+
+<!-- ===================== LEARNING PATH ===================== -->
+<section class="path anchor" id="path">
+  <h2>The Learning Path</h2>
+  <p class="lede">Twelve stages across three tiers. Walk it in order if you are new; open any module directly if you are not. Each stage names what you will be able to do once you finish it.</p>
+
+  <div class="tier">
+    <div class="tlabel">Beginner <em>you can write working programs</em></div>
+    <div class="stages">
+      <div class="stage"><div class="sn">Stage 1</div><h4>First Steps</h4><div class="mods"><a href="#m1">1 · Getting Started</a></div><div class="gain">Run code, print, read input.</div></div>
+      <div class="stage"><div class="sn">Stage 2</div><h4>Data Types</h4><div class="mods"><a href="#m2">2 · Variables &amp; Types</a><a href="#m3">3 · Numbers &amp; Math</a><a href="#m4">4 · Strings</a><a href="#m5">5 · Booleans</a></div><div class="gain">Store and combine every basic value.</div></div>
+      <div class="stage"><div class="sn">Stage 3</div><h4>Collections</h4><div class="mods"><a href="#m6">6 · Lists</a><a href="#" class="soon">7 · Tuples</a><a href="#" class="soon">8 · Dictionaries</a><a href="#" class="soon">9 · Sets</a></div><div class="gain">Group and look up many values.</div></div>
+      <div class="stage"><div class="sn">Stage 4</div><h4>Control Flow</h4><div class="mods"><a href="#" class="soon">10 · If / Elif / Else</a><a href="#" class="soon">11 · Loops</a><a href="#" class="soon">12 · Comprehensions</a></div><div class="gain">Decide and repeat.</div></div>
+    </div>
+  </div>
+
+  <div class="tier">
+    <div class="tlabel">Intermediate <em>you can structure real programs</em></div>
+    <div class="stages">
+      <div class="stage"><div class="sn">Stage 5</div><h4>Functions</h4><div class="mods"><a href="#" class="soon">13 · Functions &amp; Scope</a></div><div class="gain">Reusable, named logic.</div></div>
+      <div class="stage"><div class="sn">Stage 6</div><h4>Organization</h4><div class="mods"><a href="#" class="soon">14 · Modules &amp; Packages</a></div><div class="gain">Many files, real libraries.</div></div>
+      <div class="stage"><div class="sn">Stage 7</div><h4>Robustness</h4><div class="mods"><a href="#" class="soon">15 · Errors</a><a href="#" class="soon">16 · Files &amp; I/O</a></div><div class="gain">Handle failure and the outside world.</div></div>
+      <div class="stage"><div class="sn">Stage 8</div><h4>Objects</h4><div class="mods"><a href="#" class="soon">17 · Classes &amp; OOP</a><a href="#" class="soon">18 · Inheritance</a></div><div class="gain">Model things with behaviour.</div></div>
+    </div>
+  </div>
+
+  <div class="tier">
+    <div class="tlabel">Advanced <em>you write professional, idiomatic Python</em></div>
+    <div class="stages">
+      <div class="stage"><div class="sn">Stage 9</div><h4>Pythonic Power</h4><div class="mods"><a href="#" class="soon">19 · Generators</a><a href="#" class="soon">20 · Decorators</a></div><div class="gain">Lazy, composable, elegant code.</div></div>
+      <div class="stage"><div class="sn">Stage 10</div><h4>Modern Python</h4><div class="mods"><a href="#" class="soon">21 · Type Hints</a></div><div class="gain">Safety and clarity.</div></div>
+      <div class="stage"><div class="sn">Stage 11</div><h4>The Library</h4><div class="mods"><a href="#" class="soon">22 · Standard Library</a></div><div class="gain">Batteries, not reinvention.</div></div>
+      <div class="stage"><div class="sn">Stage 12</div><h4>Professional</h4><div class="mods"><a href="#" class="soon">23 · Concurrency</a><a href="#" class="soon">24 · Testing</a></div><div class="gain">Correct, tested, parallel.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODULE 1 ===================== -->
+<section class="chapter anchor" id="m1">
+  <div class="page-header"><span class="l">The Python Handbook</span><span class="r">Module 1 · Getting Started</span></div>
+  <div class="cinner">
+    <div class="m-header">
+      <div class="eyebrow">Module 1 · Beginner · Stage 1</div>
+      <h1>Getting Started</h1>
+      <p class="deck">How Python runs your code, and the two commands every program is built from: showing output and reading input.</p>
+      <div class="meta"><span><b>Needs:</b> nothing</span><span><b>Teaches:</b> running code · print · input · comments</span><span><b>Then you can:</b> write and run small programs</span></div>
+    </div>
+
+    <h2><span class="hint">Concept</span>What "running Python" means</h2>
+    <p class="opening">Python is an <b>interpreted</b> language. You do not translate your program into the processor's native instructions yourself; you write plain text in a file ending in <code>.py</code>, hand it to a program called the interpreter, and it carries out your instructions one line at a time, top to bottom. There is no separate build step, so the cycle of write, run, look at the result, and adjust is fast. That speed is a real part of why Python is a comfortable first language.</p>
+    <p>You can feed the interpreter code in two ways. Save it in a file and run the whole file at once, which is how real programs are written and shared. Or start the interpreter in <b>interactive mode</b>, called the REPL, and type one line at a time, seeing each result instantly, which is perfect for trying an idea. A program talks to the world through two basic actions: <code>print()</code> sends text out to the screen, and <code>input()</code> reads a line the user types in.</p>
+
+    <div class="def"><div class="term">Interpreter</div><p>The program named <code>python</code> that reads your <code>.py</code> file and runs it line by line. You never compile Python into a standalone app; the interpreter is always what runs it.</p></div>
+
+    <h2><span class="hint">Examples</span>Code you can run</h2>
+    <div class="eg"><div class="egh"><b>Example 1.1</b> · Hello, World and reading a name</div><div class="egb">
+<pre data-l="python"><code><span class="tok-com"># save as hello.py, then run:  python hello.py</span>
+<span class="tok-fn">print</span>(<span class="tok-str">"Hello, World!"</span>)              <span class="tok-com"># send a line of text to the screen</span>
+name = <span class="tok-fn">input</span>(<span class="tok-str">"What is your name? "</span>)    <span class="tok-com"># show a prompt, wait for the user, store the reply</span>
+<span class="tok-fn">print</span>(<span class="tok-fn">f</span><span class="tok-str">"Nice to meet you, {name}."</span>)  <span class="tok-com"># f-string drops the value of name into the text</span></code></pre>
+<div class="out">Hello, World!
+What is your name? Ada
+Nice to meet you, Ada.</div>
+      <p>Read it top to bottom, exactly as the interpreter does. Line 2 prints. Line 3 pauses for input. Line 4 prints again, using the value collected on line 3.</p>
+    </div></div>
+
+    <div class="eg"><div class="egh"><b>Example 1.2</b> · Controlling how <code>print</code> behaves</div><div class="egb">
+<pre data-l="python"><code><span class="tok-fn">print</span>(<span class="tok-str">"a"</span>, <span class="tok-str">"b"</span>, <span class="tok-str">"c"</span>)           <span class="tok-com"># several values, separated by spaces by default</span>
+<span class="tok-fn">print</span>(<span class="tok-str">"a"</span>, <span class="tok-str">"b"</span>, sep=<span class="tok-str">"-"</span>)      <span class="tok-com"># sep= changes what goes BETWEEN the values</span>
+<span class="tok-fn">print</span>(<span class="tok-str">"loading"</span>, end=<span class="tok-str">"..."</span>)  <span class="tok-com"># end= changes what goes AFTER (default is a newline)</span>
+<span class="tok-fn">print</span>(<span class="tok-str">"done"</span>)                  <span class="tok-com"># so this lands on the SAME line as 'loading'</span></code></pre>
+<div class="out">a b c
+a-b
+loading...done</div>
+      <p>By default <code>print</code> joins items with a space and ends with a newline. The <code>sep</code> and <code>end</code> options let you change both, which matters the moment you want output on one line.</p>
+    </div></div>
+
+    <h2><span class="hint">Edge Cases</span>What goes wrong, and the error you will see</h2>
+    <div class="errors"><div class="eh">Edge Cases &amp; Common Errors</div>
+      <p>Run these on purpose once, so the error messages become familiar rather than frightening.</p>
+<pre data-l="python"><code><span class="tok-fn">print</span>(<span class="tok-str">"hi"</span>            <span class="tok-com"># forgot the closing ) → SyntaxError</span>
+<span class="err-out"># SyntaxError: '(' was never closed</span>
+
+  <span class="tok-fn">print</span>(<span class="tok-str">"oops"</span>)        <span class="tok-com"># a stray leading space → IndentationError</span>
+<span class="err-out"># IndentationError: unexpected indent</span>
+
+<span class="tok-fn">print</span>(naem)            <span class="tok-com"># a typo'd name that was never defined → NameError</span>
+<span class="err-out"># NameError: name 'naem' is not defined</span></code></pre>
+      <p>Three of the four errors you will meet in your first hour are here: a missing bracket, an accidental indent, and a misspelled name. The interpreter always names the error type and the line, so read the last line of a traceback first.</p>
+    </div>
+
+    <div class="think"><div class="th">Think about it</div>
+      <p>Before you read on, predict what each of these prints, and why:</p>
+      <ol>
+        <li><code>print("2" + "3")</code> versus <code>print(2 + 3)</code></li>
+        <li><code>print("ha" * 3)</code></li>
+      </ol>
+      <details class="reveal"><summary></summary><div class="rv">
+        <p><b>1.</b> The first prints <code>23</code>, because <code>+</code> between two strings glues them together. The second prints <code>5</code>, because <code>+</code> between two numbers adds. The same symbol does different work depending on the <i>types</i> on either side, a theme you will see again and again.</p>
+        <p><b>2.</b> <code>hahaha</code>. Multiplying a string by an integer repeats it. Ask yourself: what would <code>"ha" * "3"</code> do? (It is an error, because you cannot multiply two strings.)</p>
+      </div></details>
+    </div>
+
+    <h2><span class="hint">Reference</span>Quick reference</h2>
+    <table>
+      <tr><th>Goal</th><th>Code</th></tr>
+      <tr><td>Show text</td><td><code>print("hello")</code></td></tr>
+      <tr><td>Show several values</td><td><code>print(a, b, c)</code></td></tr>
+      <tr><td>Custom separator / ending</td><td><code>print(a, b, sep=", ", end="!\n")</code></td></tr>
+      <tr><td>Read text from the user</td><td><code>name = input("Prompt: ")</code></td></tr>
+      <tr><td>Read a number</td><td><code>n = int(input())</code></td></tr>
+      <tr><td>A comment (ignored by Python)</td><td><code># a note to a human</code></td></tr>
+    </table>
+
+    <div class="ex"><div class="h">Exercises</div>
+      <ol>
+        <li>Print <code>Hello, World!</code>.</li>
+        <li>Ask for the user's city and print <code>You live in &lt;city&gt;.</code></li>
+        <li>Print <code>1</code>, <code>2</code>, <code>3</code> on one line separated by commas.</li>
+        <li>Make <code>Loading</code> and <code>Done</code> appear on the same line.</li>
+        <li><b>Think:</b> what is the difference between <code>print(3 * 3)</code> and <code>print("3" * 3)</code>? Predict, then test.</li>
+      </ol>
+      <details class="ans"><summary></summary><ol>
+        <li><code>print("Hello, World!")</code></li>
+        <li><code>city = input("City? "); print(f"You live in {city}.")</code></li>
+        <li><code>print(1, 2, 3, sep=", ")</code></li>
+        <li><code>print("Loading", end=" "); print("Done")</code></li>
+        <li><code>9</code> (number multiplication) versus <code>333</code> (string repetition). The types decide what <code>*</code> means.</li>
+      </ol></details>
+    </div>
+  </div>
+  <div class="page-footer"><span>First Edition · 2026</span><span class="pn">Module 1</span><span>Beginner</span></div>
+</section>
+
+<!-- ===================== MODULE 2 ===================== -->
+<section class="chapter anchor" id="m2">
+  <div class="page-header"><span class="l">The Python Handbook</span><span class="r">Module 2 · Variables &amp; Types</span></div>
+  <div class="cinner">
+    <div class="m-header">
+      <div class="eyebrow">Module 2 · Beginner · Stage 2</div>
+      <h1>Variables &amp; Data Types</h1>
+      <p class="deck">How a program remembers things, why a name is a label rather than a box, and the small set of types every value belongs to.</p>
+      <div class="meta"><span><b>Needs:</b> Module 1</span><span><b>Teaches:</b> assignment · types · conversion · naming</span><span><b>Then you can:</b> store any kind of value</span></div>
+    </div>
+
+    <h2><span class="hint">Concept</span>Names, values, and types</h2>
+    <p class="opening">A running program constantly needs to remember things: a user's name, a running total, a result it will reuse later. A <b>variable</b> gives a value a name so you can refer back to it. You create one with the equals sign, name on the left, value on the right, and from then on the name stands for that value.</p>
+    <p>Two ideas set Python apart. First, you never declare what <i>kind</i> of value a name will hold. The value carries its own type, and the same name can hold a number now and a string later. This is <b>dynamic typing</b>. Second, and more subtly, a variable is not a box that contains a value; it is a <b>label tied to a value</b>. When you write <code>x = 5</code>, the number 5 exists somewhere in memory and <code>x</code> is a tag pointing at it. Writing <code>x = 7</code> does not alter the 5; it moves the tag to a different object. This picture matters because two labels can point at the very same object, which you will meet as a real bug in the Lists module.</p>
+    <p>Every value belongs to a <b>type</b>, which decides what it can do. The handful below cover nearly everything. A value of one type can often be converted to another, for instance turning the text <code>"42"</code> into the number <code>42</code>, which you will do constantly because user input always arrives as text.</p>
+
+    <div class="def"><div class="term">Variable</div><p>A name bound to a value. The binding is made by assignment (<code>name = value</code>) and can change at any time. The name does not contain the value; it refers to a value object in memory, and several names may refer to the same one.</p></div>
+    <div class="def"><div class="term">Data Type</div><p>The category a value belongs to (<code>int</code>, <code>str</code>, <code>list</code>, and so on), which decides what operations it supports. Check it with <code>type(value)</code>.</p></div>
+
+    <h2><span class="hint">Examples</span>Code you can run</h2>
+    <div class="eg"><div class="egh"><b>Example 2.1</b> · Assigning, and inspecting the type</div><div class="egb">
+<pre data-l="python"><code>age = <span class="tok-num">28</span>             <span class="tok-com"># an int (whole number)</span>
+price = <span class="tok-num">19.99</span>        <span class="tok-com"># a float (has a decimal point)</span>
+city = <span class="tok-str">"London"</span>      <span class="tok-com"># a str (text, in quotes)</span>
+<span class="tok-fn">print</span>(<span class="tok-fn">type</span>(age), <span class="tok-fn">type</span>(price), <span class="tok-fn">type</span>(city))   <span class="tok-com"># ask each value its type</span></code></pre>
+<div class="out">&lt;class 'int'&gt; &lt;class 'float'&gt; &lt;class 'str'&gt;</div>
+      <p>We never wrote the types. Python read them from the values themselves. The quotes are what make <code>city</code> text rather than a name.</p>
+    </div></div>
+
+    <div class="eg"><div class="egh"><b>Example 2.2</b> · Converting text into a number</div><div class="egb">
+<pre data-l="python"><code>reply = <span class="tok-fn">input</span>(<span class="tok-str">"How many? "</span>)   <span class="tok-com"># input ALWAYS returns text, even if it looks numeric</span>
+count = <span class="tok-fn">int</span>(reply)            <span class="tok-com"># convert the text "4" into the number 4</span>
+<span class="tok-fn">print</span>(count * <span class="tok-num">3</span>)               <span class="tok-com"># now multiplication does arithmetic</span></code></pre>
+<div class="out">How many? 4
+12</div>
+      <p>Drop the <code>int()</code> and <code>count * 3</code> would give <code>'444'</code>, because <code>count</code> would still be the string <code>"4"</code> and <code>*</code> repeats text. Converting at the boundary is the fix.</p>
+    </div></div>
+
+    <h2><span class="hint">Edge Cases</span>What goes wrong, and the error you will see</h2>
+    <div class="errors"><div class="eh">Edge Cases &amp; Common Errors</div>
+<pre data-l="python"><code><span class="tok-fn">int</span>(<span class="tok-str">"3.5"</span>)        <span class="tok-com"># int() only parses whole numbers, not decimals</span>
+<span class="err-out"># ValueError: invalid literal for int() with base 10: '3.5'</span>
+
+<span class="tok-fn">int</span>(<span class="tok-str">"twelve"</span>)     <span class="tok-com"># words are not digits</span>
+<span class="err-out"># ValueError: invalid literal for int() with base 10: 'twelve'</span>
+
+<span class="tok-str">"5"</span> + <span class="tok-num">3</span>           <span class="tok-com"># you cannot add a string and a number</span>
+<span class="err-out"># TypeError: can only concatenate str (not "int") to str</span>
+
+age                <span class="tok-com"># using a name you never assigned</span>
+<span class="err-out"># NameError: name 'age' is not defined</span></code></pre>
+      <p>Notice the two distinct error <i>types</i>. A <b>ValueError</b> means the value is the wrong shape (text that is not a number). A <b>TypeError</b> means the types do not fit the operation (string plus int). Learning to read which one you got tells you whether to fix the value or fix the operation.</p>
+    </div>
+
+    <div class="think"><div class="th">Think about it</div>
+      <p>You write <code>x = "5"</code>. Then you want to add 3 to it. There are two ways to make <code>8</code> happen and one way to make <code>"53"</code> happen. Work out all three before revealing.</p>
+      <details class="reveal"><summary></summary><div class="rv">
+        <p><b>Get 8:</b> convert the text to a number first, <code>int(x) + 3</code>. Or convert the 3 the other direction is not it, because <code>x + str(3)</code> gives <code>"53"</code>.</p>
+        <p><b>Get "53":</b> turn the 3 into text and glue, <code>x + str(3)</code>. The lesson: <code>+</code> needs both sides to be the same kind of thing, and <i>you</i> choose which kind by converting.</p>
+      </div></details>
+    </div>
+
+    <h2><span class="hint">Reference</span>Quick reference</h2>
+    <table>
+      <tr><th>Type</th><th>Example</th><th>Holds</th></tr>
+      <tr><td><code>int</code></td><td><code>42</code></td><td>whole numbers, any size</td></tr>
+      <tr><td><code>float</code></td><td><code>3.14</code></td><td>decimals (approximate)</td></tr>
+      <tr><td><code>str</code></td><td><code>"hi"</code></td><td>text</td></tr>
+      <tr><td><code>bool</code></td><td><code>True</code></td><td>truth values</td></tr>
+      <tr><td><code>list</code></td><td><code>[1, 2]</code></td><td>an ordered, changeable group</td></tr>
+      <tr><td><code>dict</code></td><td><code>{"a": 1}</code></td><td>key-to-value lookups</td></tr>
+      <tr><td><code>NoneType</code></td><td><code>None</code></td><td>the deliberate absence of a value</td></tr>
+    </table>
+    <table>
+      <tr><th>Task</th><th>Code</th></tr>
+      <tr><td>Check a type</td><td><code>type(x)</code> · <code>isinstance(x, int)</code></td></tr>
+      <tr><td>Text → number</td><td><code>int("42")</code> · <code>float("3.14")</code></td></tr>
+      <tr><td>Number → text</td><td><code>str(42)</code></td></tr>
+      <tr><td>Swap two values</td><td><code>a, b = b, a</code></td></tr>
+    </table>
+    <div class="tip"><span class="l">Tip</span><p>Use <code>=</code> to assign and <code>==</code> to compare. <code>if x = 5</code> is an error; you want <code>if x == 5</code>. This slip catches everyone once.</p></div>
+
+    <div class="ex"><div class="h">Exercises</div>
+      <ol>
+        <li>Create <code>name</code>, <code>price</code>, and <code>in_stock</code> (a boolean) and print all three.</li>
+        <li>Swap <code>a = 1</code> and <code>b = 2</code> in one line.</li>
+        <li>Read two numbers and print their sum (remember the conversion).</li>
+        <li><b>Edge case:</b> what error does <code>int("3.5")</code> raise, and how would you convert <code>"3.5"</code> to the number 3 instead?</li>
+        <li><b>Think:</b> after <code>x = 10; y = x; x = 20</code>, what is <code>y</code>? Explain using labels and values.</li>
+      </ol>
+      <details class="ans"><summary></summary><ol>
+        <li><code>name="Pen"; price=1.5; in_stock=True; print(name, price, in_stock)</code></li>
+        <li><code>a, b = b, a</code></li>
+        <li><code>a=int(input()); b=int(input()); print(a+b)</code></li>
+        <li><code>ValueError</code>. Convert via float first: <code>int(float("3.5"))</code> → <code>3</code>.</li>
+        <li><code>y</code> is <code>10</code>. <code>y = x</code> pointed <code>y</code> at the object 10; later moving <code>x</code> to 20 does not drag <code>y</code> along, because <code>y</code> is its own label.</li>
+      </ol></details>
+    </div>
+  </div>
+  <div class="page-footer"><span>First Edition · 2026</span><span class="pn">Module 2</span><span>Beginner</span></div>
+</section>
+
+<!-- ===================== MODULE 3 ===================== -->
+<section class="chapter anchor" id="m3">
+  <div class="page-header"><span class="l">The Python Handbook</span><span class="r">Module 3 · Numbers &amp; Math</span></div>
+  <div class="cinner">
+    <div class="m-header">
+      <div class="eyebrow">Module 3 · Beginner · Stage 2</div>
+      <h1>Numbers &amp; Math</h1>
+      <p class="deck">Two number types, seven operators, the two divisions that confuse everyone, and why <code>0.1 + 0.2</code> is not <code>0.3</code>.</p>
+      <div class="meta"><span><b>Needs:</b> Module 2</span><span><b>Teaches:</b> int · float · operators · math module</span><span><b>Then you can:</b> do any calculation</span></div>
+    </div>
+
+    <h2><span class="hint">Concept</span>Integers, floats, and the operators</h2>
+    <p class="opening">Python has two everyday number types. An <b>int</b> is a whole number, and remarkably it has no size limit, so <code>2 ** 1000</code> gives an exact answer with three hundred digits. A <b>float</b> is a number with a decimal point, used for measurements and fractions. The two mix freely, and the result rises to the more general type, so an <code>int</code> plus a <code>float</code> is a <code>float</code>.</p>
+    <p>The operators are mostly familiar, with two that deserve attention. Division with <code>/</code> always gives a float, even when it divides evenly, so <code>6 / 2</code> is <code>3.0</code>. When you want a whole-number quotient use <b>floor division</b> <code>//</code>, and its partner <b>modulo</b> <code>%</code> gives the remainder. Those two answer questions like "is this number even?" and "how many full hours are in these minutes?". For anything beyond arithmetic, the <code>math</code> module supplies roots, rounding, and constants.</p>
+
+    <div class="def"><div class="term">Integer and Float</div><p>An <code>int</code> is a whole number of unlimited size. A <code>float</code> is a number with a fractional part, stored in fixed memory and therefore <i>approximate</i>. Use <code>int</code> for counting and indexing, <code>float</code> for measurement.</p></div>
+
+    <h2><span class="hint">Examples</span>Code you can run</h2>
+    <div class="eg"><div class="egh"><b>Example 3.1</b> · The seven operators</div><div class="egb">
+<pre data-l="python"><code><span class="tok-fn">print</span>(<span class="tok-num">7</span> + <span class="tok-num">2</span>)    <span class="tok-com"># 9    add</span>
+<span class="tok-fn">print</span>(<span class="tok-num">7</span> - <span class="tok-num">2</span>)    <span class="tok-com"># 5    subtract</span>
+<span class="tok-fn">print</span>(<span class="tok-num">7</span> * <span class="tok-num">2</span>)    <span class="tok-com"># 14   multiply</span>
+<span class="tok-fn">print</span>(<span class="tok-num">7</span> / <span class="tok-num">2</span>)    <span class="tok-com"># 3.5  TRUE division → always a float</span>
+<span class="tok-fn">print</span>(<span class="tok-num">7</span> // <span class="tok-num">2</span>)   <span class="tok-com"># 3    FLOOR division → drops the fraction</span>
+<span class="tok-fn">print</span>(<span class="tok-num">7</span> % <span class="tok-num">2</span>)    <span class="tok-com"># 1    MODULO → the remainder</span>
+<span class="tok-fn">print</span>(<span class="tok-num">7</span> ** <span class="tok-num">2</span>)   <span class="tok-com"># 49   power</span></code></pre>
+<div class="out">9
+5
+14
+3.5
+3
+1
+49</div>
+      <p>The two to memorise are <code>/</code> (always a float) and <code>//</code> with <code>%</code> (whole quotient and remainder). Mixing them up is the single most common numeric slip.</p>
+    </div></div>
+
+    <div class="eg"><div class="egh"><b>Example 3.2</b> · Even-or-odd, and the math module</div><div class="egb">
+<pre data-l="python"><code>n = <span class="tok-num">17</span>
+<span class="tok-fn">print</span>(n % <span class="tok-num">2</span> == <span class="tok-num">0</span>)        <span class="tok-com"># False → 17 leaves remainder 1, so it is odd</span>
+
+<span class="tok-kw">import</span> math                  <span class="tok-com"># bring in the math toolkit</span>
+area = math.pi * <span class="tok-num">5</span> ** <span class="tok-num">2</span>      <span class="tok-com"># pi × radius squared</span>
+<span class="tok-fn">print</span>(<span class="tok-fn">round</span>(area, <span class="tok-num">2</span>))        <span class="tok-com"># round to 2 decimal places</span></code></pre>
+<div class="out">False
+78.54</div>
+      <p>The <code>x % 2 == 0</code> test for evenness is everywhere in programming. <code>import math</code> unlocks <code>pi</code>, <code>sqrt</code>, and dozens more.</p>
+    </div></div>
+
+    <h2><span class="hint">Edge Cases</span>What goes wrong, and the surprises</h2>
+    <div class="errors"><div class="eh">Edge Cases &amp; Common Errors</div>
+<pre data-l="python"><code><span class="tok-num">10</span> / <span class="tok-num">0</span>            <span class="tok-com"># dividing by zero is undefined</span>
+<span class="err-out"># ZeroDivisionError: division by zero</span>
+
+<span class="tok-num">0.1</span> + <span class="tok-num">0.2</span>        <span class="tok-com"># floats are approximate, so this is NOT 0.3</span>
+<span class="err-out"># 0.30000000000000004</span>
+
+<span class="tok-fn">round</span>(<span class="tok-num">2.5</span>)         <span class="tok-com"># surprise: rounds to the nearest EVEN number</span>
+<span class="err-out"># 2     (not 3, this is 'banker's rounding')</span>
+
+<span class="tok-num">10</span> + <span class="tok-str">"5"</span>          <span class="tok-com"># number plus text never works</span>
+<span class="err-out"># TypeError: unsupported operand type(s) for +: 'int' and 'str'</span></code></pre>
+      <p>The float result is not a bug; it is how all computers store decimals. Compare floats with <code>math.isclose(a, b)</code> rather than <code>==</code>, and for money use <code>decimal.Decimal("0.1")</code>. The <code>round(2.5) == 2</code> surprise trips up nearly everyone the first time.</p>
+    </div>
+
+    <div class="think"><div class="th">Think about it</div>
+      <p>You have <code>total_minutes = 137</code>. Without looking below, how would you get "2 hours and 17 minutes" using only <code>//</code> and <code>%</code>? Then ask: why does <code>137 // 60</code> give the hours and <code>137 % 60</code> give the minutes?</p>
+      <details class="reveal"><summary></summary><div class="rv">
+        <p><code>hours = 137 // 60</code> → <code>2</code>, and <code>minutes = 137 % 60</code> → <code>17</code>. Floor division asks "how many whole 60s fit?" (the hours), and modulo asks "what is left over?" (the minutes). Together they always reconstruct the original: <code>2 * 60 + 17 == 137</code>. This pairing is how you break any quantity into a larger unit and a remainder.</p>
+      </div></details>
+    </div>
+
+    <h2><span class="hint">Reference</span>Quick reference</h2>
+    <table>
+      <tr><th>Call</th><th>Result</th><th>Use</th></tr>
+      <tr><td><code>abs(-5)</code></td><td><code>5</code></td><td>distance from zero</td></tr>
+      <tr><td><code>round(3.14159, 2)</code></td><td><code>3.14</code></td><td>round to n places</td></tr>
+      <tr><td><code>min(3,1,2)</code> · <code>max(...)</code></td><td><code>1</code> · <code>3</code></td><td>smallest / largest</td></tr>
+      <tr><td><code>sum([1,2,3])</code></td><td><code>6</code></td><td>total a list</td></tr>
+      <tr><td><code>divmod(17, 5)</code></td><td><code>(3, 2)</code></td><td>quotient and remainder at once</td></tr>
+      <tr><td><code>math.sqrt(144)</code></td><td><code>12.0</code></td><td>square root</td></tr>
+      <tr><td><code>math.isclose(a, b)</code></td><td><code>True/False</code></td><td>safe float comparison</td></tr>
+    </table>
+
+    <div class="ex"><div class="h">Exercises</div>
+      <ol>
+        <li>Compute the area of a circle of radius 7, rounded to one decimal.</li>
+        <li>Use <code>%</code> to test whether 100 is divisible by 7.</li>
+        <li>Use <code>divmod</code> to split 130 minutes into hours and minutes.</li>
+        <li><b>Edge case:</b> what does <code>10 / 0</code> raise, and what does <code>10 // 0</code> raise?</li>
+        <li><b>Think:</b> show <code>0.1 + 0.2 == 0.3</code> is <code>False</code>, then make a correct comparison and explain why the first failed.</li>
+      </ol>
+      <details class="ans"><summary></summary><ol>
+        <li><code>import math; round(math.pi * 7**2, 1)</code> → <code>153.9</code></li>
+        <li><code>100 % 7</code> → <code>2</code>, so not divisible (a 0 would mean divisible).</li>
+        <li><code>divmod(130, 60)</code> → <code>(2, 10)</code></li>
+        <li>Both raise <code>ZeroDivisionError</code>: <code>division by zero</code> and <code>integer division or modulo by zero</code>.</li>
+        <li><code>math.isclose(0.1+0.2, 0.3)</code> → <code>True</code>. The first failed because 0.1 and 0.2 each store a tiny binary error that adds up to land just past 0.3.</li>
+      </ol></details>
+    </div>
+  </div>
+  <div class="page-footer"><span>First Edition · 2026</span><span class="pn">Module 3</span><span>Beginner</span></div>
+</section>
+
+<!-- ===================== MODULE 4 ===================== -->
+<section class="chapter anchor" id="m4">
+  <div class="page-header"><span class="l">The Python Handbook</span><span class="r">Module 4 · Strings</span></div>
+  <div class="cinner">
+    <div class="m-header">
+      <div class="eyebrow">Module 4 · Beginner · Stage 2</div>
+      <h1>Strings</h1>
+      <p class="deck">Text as an ordered sequence: how to index it, slice it, format it with f-strings, and why you can never change one in place.</p>
+      <div class="meta"><span><b>Needs:</b> Module 2</span><span><b>Teaches:</b> indexing · slicing · methods · f-strings</span><span><b>Then you can:</b> manipulate any text</span></div>
+    </div>
+
+    <h2><span class="hint">Concept</span>An ordered, unchangeable sequence of characters</h2>
+    <p class="opening">A <b>string</b> is a piece of text written inside quotes, single or double, it makes no difference. It is an ordered <b>sequence</b> of characters, which means every character has a position, called an index, starting at 0, and you can pull out one character or a whole range. Because text is everywhere in real programs, strings carry a rich set of built-in methods for searching, cleaning, splitting, and reassembling.</p>
+    <p>One property shapes everything else: strings are <b>immutable</b>. You cannot change a character inside an existing string. Every operation that seems to modify a string actually builds and returns a brand new one, leaving the original untouched. So <code>s.upper()</code> hands you a new uppercase string; if you want to keep it you must capture it with <code>s = s.upper()</code>. The modern way to build text from values is the <b>f-string</b>: put an <code>f</code> before the opening quote and write expressions inside braces.</p>
+
+    <div class="def"><div class="term">String</div><p>An immutable, ordered sequence of characters, written in quotes. Immutable means it can never change in place; operations that transform it return a new string. Reach characters by index (<code>s[0]</code>) and ranges by slice (<code>s[1:4]</code>).</p></div>
+
+    <h2><span class="hint">Examples</span>Code you can run</h2>
+    <div class="eg"><div class="egh"><b>Example 4.1</b> · Indexing and slicing</div><div class="egb">
+<pre data-l="python"><code>s = <span class="tok-str">"Python"</span>
+<span class="tok-fn">print</span>(s[<span class="tok-num">0</span>])     <span class="tok-com"># 'P'      index 0 is the FIRST character</span>
+<span class="tok-fn">print</span>(s[-<span class="tok-num">1</span>])    <span class="tok-com"># 'n'      negative counts from the end</span>
+<span class="tok-fn">print</span>(s[<span class="tok-num">0</span>:<span class="tok-num">3</span>])   <span class="tok-com"># 'Pyt'    from 0 up to (NOT including) 3</span>
+<span class="tok-fn">print</span>(s[<span class="tok-num">2</span>:])    <span class="tok-com"># 'thon'   leave the end off → to the end</span>
+<span class="tok-fn">print</span>(s[::-<span class="tok-num">1</span>])  <span class="tok-com"># 'nohtyP' step of -1 → reversed</span></code></pre>
+<div class="out">P
+n
+Pyt
+thon
+nohtyP</div>
+      <p>The slice <code>[start:stop]</code> stops <i>before</i> <code>stop</code>, which is why <code>s[0:3]</code> gives three characters, not four. The reversal trick <code>[::-1]</code> is worth memorising.</p>
+    </div></div>
+
+    <div class="eg"><div class="egh"><b>Example 4.2</b> · f-strings, splitting, and joining</div><div class="egb">
+<pre data-l="python"><code>name, score = <span class="tok-str">"Ada"</span>, <span class="tok-num">91.5</span>
+<span class="tok-fn">print</span>(<span class="tok-fn">f</span><span class="tok-str">"{name} scored {score:.1f}"</span>)  <span class="tok-com"># :.1f → one decimal place</span>
+<span class="tok-fn">print</span>(<span class="tok-fn">f</span><span class="tok-str">"{1234567:,}"</span>)              <span class="tok-com"># :, → thousands separators</span>
+
+parts = <span class="tok-str">"ada,bob,carol"</span>.split(<span class="tok-str">","</span>)   <span class="tok-com"># text → list, breaking on commas</span>
+<span class="tok-fn">print</span>(parts)
+<span class="tok-fn">print</span>(<span class="tok-str">" &amp; "</span>.join(parts))            <span class="tok-com"># list → text; join is called on the SEPARATOR</span></code></pre>
+<div class="out">Ada scored 91.5
+1,234,567
+['ada', 'bob', 'carol']
+ada &amp; bob &amp; carol</div>
+      <p><code>split</code> and <code>join</code> are inverses and do a huge share of real text work. The quirk to remember: you call <code>join</code> on the separator string, handing it the list.</p>
+    </div></div>
+
+    <h2><span class="hint">Edge Cases</span>What goes wrong, and the error you will see</h2>
+    <div class="errors"><div class="eh">Edge Cases &amp; Common Errors</div>
+<pre data-l="python"><code>s = <span class="tok-str">"Python"</span>
+s[<span class="tok-num">0</span>] = <span class="tok-str">"J"</span>          <span class="tok-com"># strings are immutable → you cannot assign to a character</span>
+<span class="err-out"># TypeError: 'str' object does not support item assignment</span>
+
+s[<span class="tok-num">10</span>]              <span class="tok-com"># reaching past the end</span>
+<span class="err-out"># IndexError: string index out of range</span>
+
+s.upper()           <span class="tok-com"># this does NOT change s; the new string is thrown away</span>
+<span class="tok-fn">print</span>(s)            <span class="tok-com"># still 'Python', you forgot to capture the result</span>
+<span class="err-out"># Python</span></code></pre>
+      <p>The silent trap is the last one: <code>s.upper()</code> looks like it works but changes nothing, because strings are immutable and the new string was never stored. Write <code>s = s.upper()</code>. The first two raise loud errors; this one fails quietly, which is worse.</p>
+    </div>
+
+    <div class="think"><div class="th">Think about it</div>
+      <p>You want to capitalise the first letter of <code>"hello"</code> to get <code>"Hello"</code>, but <code>s[0] = "H"</code> raises an error. Given that strings are immutable, how can you build <code>"Hello"</code> instead?</p>
+      <details class="reveal"><summary></summary><div class="rv">
+        <p>You build a <i>new</i> string from pieces: <code>"H" + s[1:]</code> gives <code>"Hello"</code>. You take the slice after the first character and glue a new first character on. (Python also gives you <code>s.capitalize()</code> for this exact job.) The key insight: you never edit a string, you assemble a new one.</p>
+      </div></details>
+    </div>
+
+    <h2><span class="hint">Reference</span>Quick reference</h2>
+    <table>
+      <tr><th>Method</th><th>Example → result</th></tr>
+      <tr><td><code>.upper() .lower()</code></td><td><code>"Hi".upper()</code> → <code>'HI'</code></td></tr>
+      <tr><td><code>.strip()</code></td><td><code>" hi ".strip()</code> → <code>'hi'</code></td></tr>
+      <tr><td><code>.replace(a, b)</code></td><td><code>"cat".replace("c","b")</code> → <code>'bat'</code></td></tr>
+      <tr><td><code>.split(sep)</code></td><td><code>"a,b".split(",")</code> → <code>['a','b']</code></td></tr>
+      <tr><td><code>sep.join(list)</code></td><td><code>",".join(['a','b'])</code> → <code>'a,b'</code></td></tr>
+      <tr><td><code>.find(x) .count(x)</code></td><td>position of · how many</td></tr>
+      <tr><td><code>.startswith() .endswith()</code></td><td><code>"a.csv".endswith(".csv")</code> → <code>True</code></td></tr>
+      <tr><td><code>x in s</code></td><td><code>"Py" in "Python"</code> → <code>True</code></td></tr>
+    </table>
+
+    <div class="ex"><div class="h">Exercises</div>
+      <ol>
+        <li>Print the first and last character of <code>"handbook"</code>.</li>
+        <li>Reverse <code>"stressed"</code> with a slice (you get a real word).</li>
+        <li>Count the vowels in <code>"programming"</code>.</li>
+        <li><b>Edge case:</b> why does <code>"abc"[0] = "z"</code> fail, and how do you produce <code>"zbc"</code> instead?</li>
+        <li><b>Think:</b> <code>s = "  Hi  "</code>. Predict the result of <code>s.strip().lower()</code> and explain the order the two methods run in.</li>
+      </ol>
+      <details class="ans"><summary></summary><ol>
+        <li><code>s="handbook"; print(s[0], s[-1])</code> → <code>h k</code></li>
+        <li><code>"stressed"[::-1]</code> → <code>'desserts'</code></li>
+        <li><code>sum(c in "aeiou" for c in "programming")</code> → <code>3</code></li>
+        <li>Strings are immutable, so item assignment raises <code>TypeError</code>. Build a new one: <code>"z" + "abc"[1:]</code> → <code>'zbc'</code>.</li>
+        <li><code>'hi'</code>. Left to right: <code>strip()</code> runs first on <code>"  Hi  "</code> giving <code>"Hi"</code>, then <code>lower()</code> runs on that giving <code>"hi"</code>. Chained methods apply in reading order.</li>
+      </ol></details>
+    </div>
+  </div>
+  <div class="page-footer"><span>First Edition · 2026</span><span class="pn">Module 4</span><span>Beginner</span></div>
+</section>
+
+<!-- ===================== MODULE 5 ===================== -->
+<section class="chapter anchor" id="m5">
+  <div class="page-header"><span class="l">The Python Handbook</span><span class="r">Module 5 · Booleans &amp; Operators</span></div>
+  <div class="cinner">
+    <div class="m-header">
+      <div class="eyebrow">Module 5 · Beginner · Stage 2</div>
+      <h1>Booleans &amp; Operators</h1>
+      <p class="deck">True and False, the comparisons that produce them, the logic that combines them, and the surprising rule that every value is already either true or false.</p>
+      <div class="meta"><span><b>Needs:</b> Module 2</span><span><b>Teaches:</b> comparison · logic · truthiness</span><span><b>Then you can:</b> express any condition</span></div>
+    </div>
+
+    <h2><span class="hint">Concept</span>Truth, comparison, and truthiness</h2>
+    <p class="opening">A <b>boolean</b> is one of two values, <code>True</code> or <code>False</code>. They are the answers to yes-or-no questions, and every decision a program makes rests on one. You rarely type them directly; you produce them by <b>comparing</b> values with <code>==</code> (equal), <code>!=</code> (not equal), and <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>. To build bigger conditions you combine booleans with <code>and</code>, <code>or</code>, and <code>not</code>.</p>
+    <p>Here is the idea that surprises newcomers and quickly becomes indispensable: <b>every</b> value can act as true or false, not just real booleans. Zero, the empty string, and empty containers count as false; everything else counts as true. This is <b>truthiness</b>, and it lets you write <code>if name:</code> to mean "if the name is not empty". A second surprise follows from it: <code>and</code> and <code>or</code> do not return <code>True</code>/<code>False</code>, they return one of the actual operands, which is what makes <code>x = value or default</code> a clean way to supply a fallback.</p>
+
+    <div class="def"><div class="term">Boolean &amp; Truthiness</div><p>A boolean is <code>True</code> or <code>False</code>. Truthiness is the rule that any value can stand in for a boolean in a condition: <code>0</code>, <code>0.0</code>, <code>""</code>, <code>[]</code>, <code>{}</code>, and <code>None</code> are "falsy"; everything else is "truthy".</p></div>
+
+    <h2><span class="hint">Examples</span>Code you can run</h2>
+    <div class="eg"><div class="egh"><b>Example 5.1</b> · Comparing and combining</div><div class="egb">
+<pre data-l="python"><code>age = <span class="tok-num">20</span>
+has_ticket = <span class="tok-kw">True</span>
+<span class="tok-fn">print</span>(age &gt;= <span class="tok-num">18</span> <span class="tok-kw">and</span> has_ticket)   <span class="tok-com"># and → BOTH must be true</span>
+<span class="tok-fn">print</span>(age &lt; <span class="tok-num">13</span> <span class="tok-kw">or</span> age &gt; <span class="tok-num">65</span>)      <span class="tok-com"># or → EITHER being true is enough</span>
+<span class="tok-fn">print</span>(<span class="tok-num">1</span> &lt;= age &lt;= <span class="tok-num">30</span>)            <span class="tok-com"># chained: reads "age is between 1 and 30"</span></code></pre>
+<div class="out">True
+False
+True</div>
+      <p>Read the operators aloud and they say what they mean. The chained comparison <code>1 &lt;= age &lt;= 30</code> is a Python convenience most languages lack.</p>
+    </div></div>
+
+    <div class="eg"><div class="egh"><b>Example 5.2</b> · Truthiness and the "or" default</div><div class="egb">
+<pre data-l="python"><code>username = <span class="tok-str">""</span>                  <span class="tok-com"># an empty string is FALSY</span>
+display = username <span class="tok-kw">or</span> <span class="tok-str">"Guest"</span>  <span class="tok-com"># or returns the first truthy value</span>
+<span class="tok-fn">print</span>(display)                  <span class="tok-com"># 'Guest', because "" was falsy</span>
+<span class="tok-fn">print</span>(<span class="tok-fn">bool</span>(<span class="tok-str">""</span>), <span class="tok-fn">bool</span>(<span class="tok-str">"hi"</span>), <span class="tok-fn">bool</span>([]), <span class="tok-fn">bool</span>([<span class="tok-num">0</span>]))</code></pre>
+<div class="out">Guest
+False True False True</div>
+      <p>Note the last value: <code>[0]</code> is truthy. A container is truthy when it is <i>non-empty</i>, no matter what is inside it. The single zero does not make the list falsy.</p>
+    </div></div>
+
+    <h2><span class="hint">Edge Cases</span>The traps that produce wrong answers</h2>
+    <div class="errors"><div class="eh">Edge Cases &amp; Common Errors</div>
+<pre data-l="python"><code><span class="tok-kw">if</span> x = <span class="tok-num">5</span>:            <span class="tok-com"># using = (assign) where you meant == (compare)</span>
+<span class="err-out"># SyntaxError: invalid syntax. Maybe you meant '==' ?</span>
+
+<span class="tok-fn">bool</span>(<span class="tok-str">"False"</span>)         <span class="tok-com"># the TEXT "False" is a non-empty string → truthy!</span>
+<span class="err-out"># True   (this surprises everyone)</span>
+
+<span class="tok-fn">bool</span>(<span class="tok-str">" "</span>)             <span class="tok-com"># a single space is a non-empty string → truthy</span>
+<span class="err-out"># True</span>
+
+<span class="tok-num">1000</span> <span class="tok-kw">is</span> <span class="tok-num">1000</span>        <span class="tok-com"># 'is' tests SAME OBJECT, not equal value, do not use it for numbers</span>
+<span class="err-out"># may be True or False depending on Python, use == instead</span></code></pre>
+      <p>The dangerous ones are silent. <code>bool("False")</code> is <code>True</code> because it is a non-empty string, so checking user input by truthiness alone can accept the literal word "False". And <code>is</code> compares identity, not value; use <code>==</code> for values and reserve <code>is</code> for <code>None</code>.</p>
+    </div>
+
+    <div class="think"><div class="th">Think about it</div>
+      <p>A program reads a setting as text and does <code>if user_setting:</code> to decide whether it is "on". The user types the word <code>False</code>. What happens, and why is it a bug? How would you check it correctly?</p>
+      <details class="reveal"><summary></summary><div class="rv">
+        <p><code>user_setting</code> is the string <code>"False"</code>, which is non-empty and therefore <i>truthy</i>, so the branch runs and the setting is treated as on, the opposite of what the user meant. Truthiness tests emptiness, not meaning. The correct check compares the value explicitly, for example <code>if user_setting.lower() == "true":</code>. The lesson: truthiness is for "is there anything here?", not for interpreting the content.</p>
+      </div></details>
+    </div>
+
+    <h2><span class="hint">Reference</span>Quick reference</h2>
+    <table>
+      <tr><th>Operator</th><th>Meaning</th></tr>
+      <tr><td><code>== !=</code></td><td>equal, not equal</td></tr>
+      <tr><td><code>&lt; &gt; &lt;= &gt;=</code></td><td>ordering</td></tr>
+      <tr><td><code>and or not</code></td><td>combine / negate</td></tr>
+      <tr><td><code>in</code> · <code>not in</code></td><td>membership</td></tr>
+      <tr><td><code>is</code> · <code>is not</code></td><td>same object? (use only for <code>None</code>)</td></tr>
+    </table>
+    <p><b>Falsy values</b> (everything else is truthy): <code>False</code> · <code>None</code> · <code>0</code> · <code>0.0</code> · <code>""</code> · <code>[]</code> · <code>()</code> · <code>{}</code> · <code>set()</code></p>
+    <div class="tip"><span class="l">Tip</span><p>Write <code>if not items:</code> rather than <code>if len(items) == 0:</code>. It reads better and works for any container, thanks to truthiness.</p></div>
+
+    <div class="ex"><div class="h">Exercises</div>
+      <ol>
+        <li>Write a condition that is true when <code>n</code> is between 1 and 100 inclusive.</li>
+        <li>Write a "is a teenager" condition for ages 13 to 19.</li>
+        <li>Use <code>or</code> to give <code>nickname</code> a default of <code>"Anonymous"</code> when empty.</li>
+        <li><b>Edge case:</b> why is <code>bool("0")</code> equal to <code>True</code> even though <code>bool(0)</code> is <code>False</code>?</li>
+        <li><b>Think:</b> predict each: <code>bool([])</code>, <code>bool([[]])</code>, <code>bool(" ")</code>, <code>bool(0.0)</code>. Explain the pattern.</li>
+      </ol>
+      <details class="ans"><summary></summary><ol>
+        <li><code>1 &lt;= n &lt;= 100</code></li>
+        <li><code>13 &lt;= age &lt;= 19</code></li>
+        <li><code>nickname or "Anonymous"</code></li>
+        <li><code>"0"</code> is a non-empty <i>string</i> (it has one character), and any non-empty string is truthy. <code>0</code> is the <i>number</i> zero, which is falsy. Quotes change everything.</li>
+        <li><code>False, True, True, False</code>. The rule is emptiness, not content: <code>[]</code> and <code>0.0</code> are empty/zero so falsy; <code>[[]]</code> has one item and <code>" "</code> has one character, so both are truthy.</li>
+      </ol></details>
+    </div>
+  </div>
+  <div class="page-footer"><span>First Edition · 2026</span><span class="pn">Module 5</span><span>Beginner</span></div>
+</section>
+
+<!-- ===================== MODULE 6 ===================== -->
+<section class="chapter anchor" id="m6">
+  <div class="page-header"><span class="l">The Python Handbook</span><span class="r">Module 6 · Lists</span></div>
+  <div class="cinner">
+    <div class="m-header">
+      <div class="eyebrow">Module 6 · Beginner · Stage 3</div>
+      <h1>Lists</h1>
+      <p class="deck">The workhorse collection: ordered, changeable, sliceable, and the place where the label-not-a-box idea finally bites.</p>
+      <div class="meta"><span><b>Needs:</b> Modules 2, 4</span><span><b>Teaches:</b> mutation · slicing · comprehensions · aliasing</span><span><b>Then you can:</b> store and process many values</span></div>
+    </div>
+
+    <h2><span class="hint">Concept</span>Ordered and mutable</h2>
+    <p class="opening">So far each name has held a single value. A <b>list</b> holds many values in order under one name. It is the workhorse of Python: a to-do list, the lines of a file, the rows of a table all live naturally in lists. You write one in square brackets, and it may hold any types, even mixed.</p>
+    <p>Two properties define a list. It is <b>ordered</b>, so every item has a position you reach by index, and slicing pulls out ranges exactly as with strings. And it is <b>mutable</b>, meaning you can change it in place after creation: add, remove, replace, sort. That is the sharp difference from strings, which are frozen once made. Because building a new list from an old one is so common, Python offers a one-line form called a <b>list comprehension</b> you will use constantly.</p>
+
+    <div class="def"><div class="term">List</div><p>An ordered, mutable sequence of values, written in square brackets <code>[1, 2, 3]</code>. Ordered means items keep their position and are reached by index; mutable means the list can be changed in place after it is made.</p></div>
+
+    <h2><span class="hint">Examples</span>Code you can run</h2>
+    <div class="eg"><div class="egh"><b>Example 6.1</b> · Changing a list in place</div><div class="egb">
+<pre data-l="python"><code>tasks = [<span class="tok-str">"email"</span>, <span class="tok-str">"lunch"</span>]
+tasks.append(<span class="tok-str">"call"</span>)     <span class="tok-com"># add one item to the END</span>
+tasks.insert(<span class="tok-num">0</span>, <span class="tok-str">"wake"</span>)  <span class="tok-com"># add at a given position (the front here)</span>
+tasks.remove(<span class="tok-str">"lunch"</span>)    <span class="tok-com"># delete the first item equal to "lunch"</span>
+<span class="tok-fn">print</span>(tasks)              <span class="tok-com"># the SAME list object, now changed</span></code></pre>
+<div class="out">['wake', 'email', 'call']</div>
+      <p>Each method changes the existing list; none returns a new one. That is what "mutable" means, and it is why you do not write <code>tasks = tasks.append(...)</code>.</p>
+    </div></div>
+
+    <div class="eg"><div class="egh"><b>Example 6.2</b> · The list comprehension</div><div class="egb">
+<pre data-l="python"><code>nums = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>, <span class="tok-num">5</span>, <span class="tok-num">6</span>]
+squares = [n * n <span class="tok-kw">for</span> n <span class="tok-kw">in</span> nums]           <span class="tok-com"># transform EVERY item</span>
+evens   = [n <span class="tok-kw">for</span> n <span class="tok-kw">in</span> nums <span class="tok-kw">if</span> n % <span class="tok-num">2</span> == <span class="tok-num">0</span>]  <span class="tok-com"># KEEP only some items (add an if)</span>
+<span class="tok-fn">print</span>(squares)
+<span class="tok-fn">print</span>(evens)</code></pre>
+<div class="out">[1, 4, 9, 16, 25, 36]
+[2, 4, 6]</div>
+      <p>Read it as a sentence: "n times n, for each n in nums". The optional <code>if</code> filters. This single line replaces a four-line loop that appends to a new list.</p>
+    </div></div>
+
+    <h2><span class="hint">Edge Cases</span>The errors, and the famous aliasing bug</h2>
+    <div class="errors"><div class="eh">Edge Cases &amp; Common Errors</div>
+<pre data-l="python"><code>xs = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>]
+xs[<span class="tok-num">5</span>]                 <span class="tok-com"># no index 5 exists</span>
+<span class="err-out"># IndexError: list index out of range</span>
+
+xs.remove(<span class="tok-num">99</span>)          <span class="tok-com"># 99 is not in the list</span>
+<span class="err-out"># ValueError: list.remove(x): x not in list</span>
+
+<span class="tok-com"># The aliasing bug: = does NOT copy a list</span>
+a = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>]
+b = a                  <span class="tok-com"># b is the SAME list, not a copy (two labels, one object)</span>
+b.append(<span class="tok-num">4</span>)
+<span class="tok-fn">print</span>(a)               <span class="tok-com"># [1, 2, 3, 4], changing b changed a!</span>
+<span class="err-out"># [1, 2, 3, 4]</span></code></pre>
+      <p>The first two raise loud errors. The third is the silent classic, and it is exactly the label-not-a-box idea from Module 2: <code>b = a</code> ties a second label to one list. Mutate through either name and both see it. To get an independent copy, ask for one: <code>b = a.copy()</code> (or <code>a[:]</code>, or <code>list(a)</code>).</p>
+    </div>
+
+    <div class="think"><div class="th">Think about it</div>
+      <p>You want a 3-by-3 grid and write <code>grid = [[0] * 3] * 3</code>. You set <code>grid[0][0] = 9</code> and find that <i>three</i> cells changed, not one. Before revealing, work out why, connecting it to the aliasing bug above.</p>
+      <details class="reveal"><summary></summary><div class="rv">
+        <p><code>[[0] * 3] * 3</code> does not make three separate rows. The outer <code>* 3</code> repeats the <i>same</i> inner-list object three times, so all three rows are one shared list with three labels on it, the aliasing bug in disguise. Changing one row changes all three. The fix builds three independent rows with a comprehension: <code>grid = [[0] * 3 for _ in range(3)]</code>. This is one of the most instructive bugs in the language.</p>
+      </div></details>
+    </div>
+
+    <h2><span class="hint">Reference</span>Quick reference</h2>
+    <table>
+      <tr><th>Method</th><th>Does</th></tr>
+      <tr><td><code>append(x)</code></td><td>add one item to the end</td></tr>
+      <tr><td><code>insert(i, x)</code></td><td>insert at position i</td></tr>
+      <tr><td><code>extend(seq)</code></td><td>add all items from another sequence</td></tr>
+      <tr><td><code>remove(x)</code></td><td>delete the first item equal to x</td></tr>
+      <tr><td><code>pop([i])</code></td><td>remove and return last (or item i)</td></tr>
+      <tr><td><code>sort()</code> · <code>sorted(xs)</code></td><td>sort in place · return a new sorted list</td></tr>
+      <tr><td><code>reverse()</code></td><td>reverse in place</td></tr>
+      <tr><td><code>a.copy()</code> · <code>a[:]</code></td><td>make an independent copy</td></tr>
+    </table>
+    <div class="tip"><span class="l">Tip</span><p><code>sort()</code> changes the list and returns <code>None</code>; <code>sorted(xs)</code> leaves it alone and returns a new list. Writing <code>xs = xs.sort()</code> sets <code>xs</code> to <code>None</code>, a frequent slip.</p></div>
+
+    <div class="ex"><div class="h">Exercises</div>
+      <ol>
+        <li>Make a list of three colours, add a fourth, then remove the first.</li>
+        <li>Get the last two items of <code>[1,2,3,4,5]</code> with a slice.</li>
+        <li>Build <code>[1, 4, 9, 16, 25]</code> with a comprehension.</li>
+        <li>From <code>[5,12,8,3,20,7]</code>, keep only numbers greater than 8.</li>
+        <li><b>Edge case:</b> what does <code>[1,2,3][5]</code> raise, and what does <code>[].pop()</code> raise?</li>
+        <li><b>Think:</b> demonstrate the aliasing bug with two names on one list, then fix it so changing one leaves the other untouched.</li>
+      </ol>
+      <details class="ans"><summary></summary><ol>
+        <li><code>c=["red","green","blue"]; c.append("yellow"); c.pop(0)</code></li>
+        <li><code>[1,2,3,4,5][-2:]</code> → <code>[4, 5]</code></li>
+        <li><code>[n*n for n in range(1,6)]</code></li>
+        <li><code>[x for x in [5,12,8,3,20,7] if x &gt; 8]</code> → <code>[12, 20]</code></li>
+        <li><code>IndexError: list index out of range</code> and <code>IndexError: pop from empty list</code>.</li>
+        <li><code>a=[1,2]; b=a; b.append(3)</code> makes <code>a==[1,2,3]</code>. Fix: <code>b=a.copy()</code>, then <code>b.append(3)</code> leaves <code>a==[1,2]</code>.</li>
+      </ol></details>
+    </div>
+  </div>
+  <div class="page-footer"><span>First Edition · 2026</span><span class="pn">Module 6 · End of sample</span><span>Beginner</span></div>
+</section>
+
+</main>
+</div>
+</body>
+</html>

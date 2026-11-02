@@ -1,0 +1,10 @@
+# Flat-file caching headers, accepted by both Cloudflare Pages and Netlify.
+
+/*.html
+  Cache-Control: public, max-age=300, must-revalidate
+
+/*.pdf
+  Cache-Control: public, max-age=86400
+
+/docs/images/*
+  Cache-Control: public, max-age=604800
